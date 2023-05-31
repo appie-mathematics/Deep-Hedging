@@ -39,8 +39,12 @@ class Agent(torch.Module):
 
 
     # takes all the historic data and return feature vector
-    def feature_transform(self, state):
-        return state[-1]
+    def feature_transform(self, state: tuple) -> torch.Tensor:
+        """
+        :param state: tuple
+        :return: torch.Tensor
+        """
+        return torch.cat(state, dim=-1)
 
 
     # returns the final p&l
@@ -66,7 +70,7 @@ class Agent(torch.Module):
         return portfolio_value[:,-1] + cash_account[:,-1]
 
 
-    def loss(self, contingent_claim: Derivative , hedging_instruments: List[Primary], paths) -> float:
+    def loss(self, contingent_claim: Claim , hedging_instruments: List[Instrument], P, T) -> float:
         """
         :param contingent_claim: Instrument
         :param hedging_instruments: List[Instrument]
@@ -77,19 +81,24 @@ class Agent(torch.Module):
         # number of hedging instruments: N
         # number of paths: P
 
-        primary_of_claim = contingent_claim.primary
+        # 1. check how many primaries are invloved
+        primaries = {} # dict
+        for instrument in hedging_instruments:
+            primaries[instrument.primary] = instrument.primary
 
-        # generate paths
-        hedge_paths = self.simulator.generate_paths(hedging_instruments, paths) # P x T x N
+        primaries[contingent_claim.primary] = contingent_claim.primary
 
-        primary_path = None # P x T x 1
-        if primary_of_claim in hedging_instruments:
-            primary_path = hedge_paths[:, :, hedging_instruments.index(primary_of_claim)]
-        else:
-            primary_path = self.simulator.generate_paths([primary_of_claim], paths)
+        # 2. generate paths for all the primaries
+        primary_paths = self.simulator.simulate(primaries, P, T) # dict[Primary, torch.Tensor]
+
+        # 3. generate paths for all derivatives based on the primary paths
+        hedge_paths = torch.Tensor([instrument.value(primary_paths[instrument.primary]) for instrument in hedging_instruments]).transpose(0,1) # P x T x N
+
+        # 4. compute claim payoff based on primary paths
+        claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary]) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths) # P
-        return self.criterion(portfolio_value + contingent_claim.payoff(primary_path)).mean() # scalar
+        return self.criterion(portfolio_value + claim_payoff).mean() # scalar
 
 
 
@@ -111,3 +120,5 @@ class Agent(torch.Module):
             self.optimizer.step()
             if verbose:
                 print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
+
+            # eventually add validation
