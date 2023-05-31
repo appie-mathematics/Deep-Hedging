@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
+import torch
 
 
 class CostFunction(ABC):
 
     @abstractmethod
-    def cost(self, action, state = None):
+    def cost(self, action, state = None) -> torch.Tensor:
         pass
 
     def __call__(self, action, state = None):

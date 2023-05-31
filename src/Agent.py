@@ -5,7 +5,7 @@ from instruments.Claims import Claim
 from tqdm import tqdm
 from instruments.Instrument import Instrument
 from instruments.Primaries import Primary
-
+import matplotlib.pyplot as plt
 
 class Agent(torch.nn.Module):
     """
@@ -68,7 +68,7 @@ class Agent(torch.nn.Module):
 
         for t in range(1, T):
             # define state
-            state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t], portfolio_value[:,:t]
+            state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t]
             # compute action
             feature_vector = self.feature_transform(state)
             # select action
@@ -78,13 +78,26 @@ class Agent(torch.nn.Module):
             # compute cost of action
             cost_of_action = self.cost_function(action, state) # (P, 1)
             # TODO: check if other operations are possible
-            spent = (action * hedge_paths[:, t].squeeze()).sum(dim=-1) + cost_of_action # (P, 1)
+            spent = (action * hedge_paths[:, t]).sum(dim=-1) + cost_of_action # (P, 1)
             # update cash account
             cash_account[:,t] = cash_account[:, t-1] * (1+self.interest_rate) - spent # (P, 1)
             # update portfolio value
-            portfolio_value[:,t] = (positions[:,t] * hedge_paths[:,t].squeeze()).sum(dim=-1) + cash_account[:,t] # (P, 1)
+            portfolio_value[:,t] = (positions[:,t] * hedge_paths[:,t]).sum(dim=-1) # (P, 1)
+            # print portfolio_value[:,t], cash_account[:,t], positions[:,t], hedge_paths[:,t], action, cost_of_action
+            print(cost_of_action.mean(dim=0).item())
+
+        # # plot portfolio value, cash account, positions
+        # plt.plot(portfolio_value.detach().mean(dim=0), label='portfolio value')
+        # plt.plot(cash_account.detach().mean(dim=0), label='cash account')
+        # plt.plot(positions.detach().mean(dim=0), label='positions')
+        # plt.plot(hedge_paths.detach().mean(dim=0), label='hedge paths')
+        # plt.legend()
+        # plt.grid()
+        # plt.show()
 
         # return final portfolio value
+        # print("pfv", portfolio_value[:,-1].mean(dim=0).item())
+        # print("cash", cash_account[:,-1].mean(dim=0).item())
         return portfolio_value[:,-1] + cash_account[:,-1]
 
 
@@ -115,7 +128,9 @@ class Agent(torch.nn.Module):
         claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths) # P
-        return self.criterion(portfolio_value - claim_payoff).mean()
+        profit = portfolio_value - claim_payoff # P
+        print(profit.mean())
+        return - self.criterion(profit).mean()
 
 
 

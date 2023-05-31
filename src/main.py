@@ -10,16 +10,19 @@ from instruments.Instrument import Instrument
 from instruments.Primaries import GeometricBrownianStock
 
 
+T = 10
+interest_rate = 0
 contingent_claim: Claim = EuropeanCall(100)
-stock = GeometricBrownianStock(100, 0.05, 0.2)
+drift = 0
+volatility = 0.2
+stock = GeometricBrownianStock(1, drift, volatility)
 contingent_claim.attach_primary(stock)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
-epochs = 100
-paths = 10000
+epochs = 10
+paths = 1000
 verbose = True
-T = 10
 
 h_dim = 15
 simple_model: torch.nn.Module = torch.nn.Sequential(
@@ -35,7 +38,6 @@ optimizer: torch.optim.Optimizer = torch.optim.Adam(simple_model.parameters(), l
 criterion: torch.nn.Module = Expectation()
 device: torch.device = torch.device('cpu')
 cost_function: CostFunction = PorportionalCost(0.01)
-interest_rate = 0.05
 
 
 agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, interest_rate)
