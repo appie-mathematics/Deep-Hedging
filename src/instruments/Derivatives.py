@@ -1,1 +1,0 @@
-# Payoff functions of derivatives
