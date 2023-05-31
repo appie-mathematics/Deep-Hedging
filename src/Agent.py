@@ -61,7 +61,6 @@ class Agent(torch.nn.Module):
     def compute_portfolio(self, hedge_paths) -> torch.Tensor:
         # number of time steps
         P, T, N = hedge_paths.shape
-        print(P, T, N)
 
         cash_account = torch.zeros(P, T)
         portfolio_value = torch.zeros(P, T)
@@ -80,7 +79,6 @@ class Agent(torch.nn.Module):
             cost_of_action = self.cost_function(action, state) # (P, 1)
             # TODO: check if other operations are possible
             spent = (action * hedge_paths[:, t].squeeze()).sum(dim=-1) + cost_of_action # (P, 1)
-            print(cost_of_action)
             # update cash account
             cash_account[:,t] = cash_account[:, t-1] * (1+self.interest_rate) - spent # (P, 1)
             # update portfolio value
@@ -117,7 +115,7 @@ class Agent(torch.nn.Module):
         claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths) # P
-        return self.criterion(portfolio_value - claim_payoff)
+        return self.criterion(portfolio_value - claim_payoff).mean()
 
 
 
@@ -132,7 +130,7 @@ class Agent(torch.nn.Module):
         :return: None
         """
 
-        for epoch in tqdm(range(epochs), desc="Training", leave=False, total=epochs):
+        for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             # TODO: define number of time steps
             loss = self.loss(contingent_claim, hedging_instruments, paths, T)
             self.optimizer.zero_grad()

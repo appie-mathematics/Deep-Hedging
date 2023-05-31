@@ -16,10 +16,10 @@ contingent_claim.attach_primary(stock)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
-epochs = 10
-paths = 100
+epochs = 100
+paths = 10000
 verbose = True
-T = 3
+T = 10
 
 h_dim = 15
 simple_model: torch.nn.Module = torch.nn.Sequential(
