@@ -39,8 +39,19 @@ simple_model: torch.nn.Module = torch.nn.Sequential(
 )
 optimizer: torch.optim.Optimizer = torch.optim.Adam(simple_model.parameters(), lr=0.005)
 criterion: torch.nn.Module = Expectation()
-device: torch.device = torch.device('cpu')
 cost_function: CostFunction = PorportionalCost(0.01)
+
+device: torch.device = torch.device('cpu')
+if torch.cuda.is_available():
+    device = torch.device('cuda')
+    print("CUDA device found.")
+
+# mac device
+try:
+    device = torch.device("mps")
+    print("MPS device found.")
+except:
+    pass
 
 
 agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, step_interest_rate)

@@ -62,9 +62,9 @@ class Agent(torch.nn.Module):
         # number of time steps
         P, T, N = hedge_paths.shape
 
-        cash_account = torch.zeros(P, T)
-        portfolio_value = torch.zeros(P, T)
-        positions = torch.zeros(P, T, N)
+        cash_account = torch.zeros(P, T).to(self.device)
+        portfolio_value = torch.zeros(P, T).to(self.device)
+        positions = torch.zeros(P, T, N).to(self.device)
 
         for t in range(1, T):
             # define state
@@ -125,9 +125,9 @@ class Agent(torch.nn.Module):
         hedge_paths = torch.stack(hedge_paths, dim=-1) # P x T x N
 
         # 4. compute claim payoff based on primary paths
-        claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]) # P x 1
+        claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]).to(self.device) # P x 1
 
-        portfolio_value = self.compute_portfolio(hedge_paths) # P
+        portfolio_value = self.compute_portfolio(hedge_paths.to(self.device)) # P
         print("mean portfolio value", portfolio_value.mean().item())
         print("mean claim payoff", claim_payoff.mean().item())
         profit = portfolio_value - claim_payoff # P
@@ -146,9 +146,10 @@ class Agent(torch.nn.Module):
         :return: None
         """
         losses = []
+        self.model.to(self.device)
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
-            # TODO: define number of time steps
+            self.train()
             loss = self.loss(contingent_claim, hedging_instruments, paths, T)
             self.optimizer.zero_grad()
             loss.backward()
@@ -182,4 +183,4 @@ class SimpleAgent(Agent):
         log_prices = torch.log(last_prices) # (P, N)
 
         # return squeezed tensor
-        return log_prices
+        return log_prices.to(self.device)
