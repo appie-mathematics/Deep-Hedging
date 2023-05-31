@@ -44,28 +44,26 @@ class Agent(torch.Module):
 
 
     # returns the final p&l
-    def compute_portfolio(self, claim_path, hedge_paths) -> float:
+    def compute_portfolio(self, hedge_paths) -> float:
         # number of time steps
-        T = claim_path.shape[0]
-        # number of available hedging instruments
-        N = hedge_paths.shape[0]
+        P, T, N = hedge_paths.shape
 
-        cash_account = torch.zeros(1, T)
-        portfolio_value = torch.zeros(1, T)
-        positions = torch.zeros(N, T)
+        cash_account = torch.zeros(P, T)
+        portfolio_value = torch.zeros(P, T)
+        positions = torch.zeros(P, T, N)
 
         for t in range(1, T):
-            state = claim_path[:t], hedge_paths[:t], positions[:,:t], cash_account[:t], portfolio_value[:t]
+            state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t], portfolio_value[:,:t]
             feature_vector = self.feature_transform(state)
-            action = self.policy(feature_vector)
-            positions[N, t] = positions[N, t-1] + action
-            cost_of_action: int = self.cost_function(action, state)
-            # TODO: fix matrix mult?
-            spent: int = action @ hedge_paths[t].T + cost_of_action
-            cash_account[t] = cash_account[t-1] * (1+self.interest_rate) - spent
-            portfolio_value[t] = positions[N, t] @ hedge_paths[t].T
+            action = self.policy(feature_vector) # (P, N)
+            positions[:, t] = positions[:, t-1] + action
+            cost_of_action = self.cost_function(action, state) # (P, 1)
+            # TODO: check if other operations are possible
+            spent = (action * hedge_paths[:, t].squeeze()).sum(dim=-1) + cost_of_action # (P, 1)
+            cash_account[:,t] = cash_account[:, t-1] * (1+self.interest_rate) - spent # (P, 1)
+            portfolio_value[:,t] = positions[:, t] @ hedge_paths[:, t].transpose(1,2) #(P, T)
 
-        return portfolio_value[-1] + cash_account[-1]
+        return portfolio_value[:,-1] + cash_account[:,-1]
 
 
     def loss(self, contingent_claim: Derivative , hedging_instruments: List[Primary], paths) -> float:
@@ -75,11 +73,23 @@ class Agent(torch.Module):
         :param paths: int
         :return: None
         """
+        # number of time steps: T
+        # number of hedging instruments: N
+        # number of paths: P
+
+        primary_of_claim = contingent_claim.primary
 
         # generate paths
-        hedge_paths = self.simulator.generate_paths(hedging_instruments, paths)
-        portfolio_value = self.compute_portfolio(claim_path, hedge_paths)
-        return self.criterion(portfolio_value).mean()
+        hedge_paths = self.simulator.generate_paths(hedging_instruments, paths) # P x T x N
+
+        primary_path = None # P x T x 1
+        if primary_of_claim in hedging_instruments:
+            primary_path = hedge_paths[:, :, hedging_instruments.index(primary_of_claim)]
+        else:
+            primary_path = self.simulator.generate_paths([primary_of_claim], paths)
+
+        portfolio_value = self.compute_portfolio(hedge_paths) # P
+        return self.criterion(portfolio_value + contingent_claim.payoff(primary_path)).mean() # scalar
 
 
 
@@ -95,3 +105,9 @@ class Agent(torch.Module):
         """
 
         for epoch in epochs:
+            loss = self.loss(contingent_claim, hedging_instruments, paths)
+            self.optimizer.zero_grad()
+            loss.backward()
+            self.optimizer.step()
+            if verbose:
+                print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
