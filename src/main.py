@@ -13,14 +13,14 @@ from instruments.Primaries import GeometricBrownianStock
 T = 10
 interest_rate = 0
 contingent_claim: Claim = EuropeanCall(100)
-drift = 0
+drift = 0.01
 volatility = 0.2
 stock = GeometricBrownianStock(1, drift, volatility)
 contingent_claim.attach_primary(stock)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
-epochs = 10
+epochs = 100
 paths = 1000
 verbose = True
 

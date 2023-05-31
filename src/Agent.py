@@ -167,7 +167,7 @@ class SimpleAgent(Agent):
         :return: torch.Tensor
         """
         # only know the current price
-        paths, cash_account, positions, portfolio_value = state
+        paths, cash_account, positions = state
 
         last_prices = paths[:, -1, :] # (P, N)
 
