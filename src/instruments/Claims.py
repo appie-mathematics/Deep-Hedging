@@ -8,8 +8,6 @@ from abc import ABC, abstractmethod
 
 class Claim(ABC):
 
-    primary = None
-
     @abstractmethod
     def payoff(self, primary_path):
         # returns payoff of the claim at final timestep

@@ -1,4 +1,9 @@
+from typing import List
 import torch
+from Costs import CostFunction
+from instruments.Claims import Claim
+
+from instruments.Instrument import Instrument
 
 
 class Agent(torch.Module):
@@ -6,7 +11,12 @@ class Agent(torch.Module):
     Base class for deep hedge agent
     """
 
-    def __init__(self, model, optimizer, criterion, device, simulator, cost_function, interest_rate = 0.05):
+    def __init__(self, model: torch.nn.Module,
+                 optimizer: torch.optim.Optimizer,
+                 criterion: torch.nn.Module,
+                 device: torch.device,
+                 cost_function: CostFunction,
+                 interest_rate = 0.05):
         """
         :param model: torch.nn.Module
         :param optimizer: torch.optim
@@ -19,7 +29,6 @@ class Agent(torch.Module):
         self.criterion = criterion
         self.cost_function = cost_function
         self.device = device
-        self.simulator = simulator
         self.interest_rate = interest_rate
 
     def forward(self, x):
@@ -48,7 +57,7 @@ class Agent(torch.Module):
 
 
     # returns the final p&l
-    def compute_portfolio(self, hedge_paths) -> float:
+    def compute_portfolio(self, hedge_paths) -> torch.Tensor:
         # number of time steps
         P, T, N = hedge_paths.shape
 
@@ -57,20 +66,28 @@ class Agent(torch.Module):
         positions = torch.zeros(P, T, N)
 
         for t in range(1, T):
+            # define state
             state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t], portfolio_value[:,:t]
+            # compute action
             feature_vector = self.feature_transform(state)
+            # select action
             action = self.policy(feature_vector) # (P, N)
+            # update positions
             positions[:, t] = positions[:, t-1] + action
+            # compute cost of action
             cost_of_action = self.cost_function(action, state) # (P, 1)
             # TODO: check if other operations are possible
             spent = (action * hedge_paths[:, t].squeeze()).sum(dim=-1) + cost_of_action # (P, 1)
+            # update cash account
             cash_account[:,t] = cash_account[:, t-1] * (1+self.interest_rate) - spent # (P, 1)
+            # update portfolio value
             portfolio_value[:,t] = positions[:, t] @ hedge_paths[:, t].transpose(1,2) #(P, T)
 
+        # return final portfolio value
         return portfolio_value[:,-1] + cash_account[:,-1]
 
 
-    def loss(self, contingent_claim: Claim , hedging_instruments: List[Instrument], P, T) -> float:
+    def loss(self, contingent_claim: Claim , hedging_instruments: List[Instrument], P, T):
         """
         :param contingent_claim: Instrument
         :param hedging_instruments: List[Instrument]
@@ -82,14 +99,10 @@ class Agent(torch.Module):
         # number of paths: P
 
         # 1. check how many primaries are invloved
-        primaries = {} # dict
-        for instrument in hedging_instruments:
-            primaries[instrument.primary] = instrument.primary
-
-        primaries[contingent_claim.primary] = contingent_claim.primary
+        primaries = set([hedge.primary for hedge in hedging_instruments] + [contingent_claim.primary])
 
         # 2. generate paths for all the primaries
-        primary_paths = self.simulator.simulate(primaries, P, T) # dict[Primary, torch.Tensor]
+        primary_paths = {primary: primary.simulate(P, T) for primary in primaries}
 
         # 3. generate paths for all derivatives based on the primary paths
         hedge_paths = torch.Tensor([instrument.value(primary_paths[instrument.primary]) for instrument in hedging_instruments]).transpose(0,1) # P x T x N
@@ -98,12 +111,12 @@ class Agent(torch.Module):
         claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary]) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths) # P
-        return self.criterion(portfolio_value + claim_payoff).mean() # scalar
+        return self.criterion(portfolio_value, claim_payoff).mean() # scalar
 
 
 
 
-    def fit(self, contingent_claim: Instrument, hedging_instruments: List[Instrument], epochs = 50, paths = 100, verbose = False):
+    def fit(self, contingent_claim: Claim, hedging_instruments: List[Instrument], epochs = 50, paths = 100, verbose = False, T = 365):
         """
         :param contingent_claim: Instrument
         :param hedging_instruments: List[Instrument]
@@ -113,8 +126,9 @@ class Agent(torch.Module):
         :return: None
         """
 
-        for epoch in epochs:
-            loss = self.loss(contingent_claim, hedging_instruments, paths)
+        for epoch in range(epochs):
+            # TODO: define number of time steps
+            loss = self.loss(contingent_claim, hedging_instruments, paths, T)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()

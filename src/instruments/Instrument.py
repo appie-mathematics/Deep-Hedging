@@ -1,11 +1,13 @@
 from abc import abstractmethod
+
+import torch
 from instruments.Claims import Claim
 
 
 class Instrument(Claim):
 
     @abstractmethod
-    def value(self, primary_path):
+    def value(self, primary_path) -> torch.Tensor:
         # returns value of the instrument at each timestep
         pass
 
