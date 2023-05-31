@@ -21,4 +21,4 @@ class PorportionalCost(CostFunction):
     def cost(self, action, state):
         # state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t], portfolio_value[:,:t]
         purchase_price = state[0][:, -1, :] * action
-        return self.cost_rate * action.abs().sum(dim=-1, keepdim=True)
+        return self.cost_rate * purchase_price.abs().sum(dim=-1)
