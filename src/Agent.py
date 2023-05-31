@@ -83,8 +83,6 @@ class Agent(torch.nn.Module):
             cash_account[:,t] = cash_account[:, t-1] * (1+self.interest_rate) - spent # (P, 1)
             # update portfolio value
             portfolio_value[:,t] = (positions[:,t] * hedge_paths[:,t]).sum(dim=-1) # (P, 1)
-            # print portfolio_value[:,t], cash_account[:,t], positions[:,t], hedge_paths[:,t], action, cost_of_action
-            print(cost_of_action.mean(dim=0).item())
 
         # # plot portfolio value, cash account, positions
         # plt.plot(portfolio_value.detach().mean(dim=0), label='portfolio value')
@@ -144,6 +142,7 @@ class Agent(torch.nn.Module):
         :param verbose: bool
         :return: None
         """
+        losses = []
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             # TODO: define number of time steps
@@ -151,10 +150,15 @@ class Agent(torch.nn.Module):
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
+            losses.append(loss.item())
             if verbose:
                 print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
 
             # eventually add validation
+
+        if verbose:
+            plt.plot(losses, label='loss')
+            plt.show()
 
 
 
