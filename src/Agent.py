@@ -2,11 +2,11 @@ from typing import List
 import torch
 from Costs import CostFunction
 from instruments.Claims import Claim
-
+from tqdm import tqdm
 from instruments.Instrument import Instrument
 
 
-class Agent(torch.Module):
+class Agent(torch.nn.Module):
     """
     Base class for deep hedge agent
     """
@@ -126,7 +126,7 @@ class Agent(torch.Module):
         :return: None
         """
 
-        for epoch in range(epochs):
+        for epoch in tqdm(range(epochs)):
             # TODO: define number of time steps
             loss = self.loss(contingent_claim, hedging_instruments, paths, T)
             self.optimizer.zero_grad()
@@ -136,3 +136,24 @@ class Agent(torch.Module):
                 print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
 
             # eventually add validation
+
+
+
+
+class SimpleAgent(Agent):
+
+    def feature_transform(self, state: tuple) -> torch.Tensor:
+        """
+        :param state: tuple
+        :return: torch.Tensor
+        """
+        # only know the current price
+        paths, cash_account, positions, portfolio_value = state
+
+        last_prices = paths[:, -1, :] # (P, N)
+
+        # log prices
+        log_prices = torch.log(last_prices) # (P, N)
+
+        # return squeezed tensor
+        return log_prices
