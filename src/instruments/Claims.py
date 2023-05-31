@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+
+import torch
 # Payoff functions of derivatives
 
 # claim -> instrument -> [derivatives, primary]
@@ -14,10 +16,12 @@ class Claim(ABC):
         pass
 
     def primary(self):
-        return self.primary
+        if self._primary is None:
+            raise Exception("Primary not attached")
+        return self._primary
 
     def attach_primary(self, primary):
-        self.primary = primary
+        self._primary = primary
         return self
 
 class EuropeanCall(Claim):
@@ -26,4 +30,5 @@ class EuropeanCall(Claim):
         self.strike = strike
 
     def payoff(self, primary_path):
-        return max(primary_path[-1] - self.strike, 0)
+        # primary path is P x T
+        return torch.clamp(primary_path[:,-1] - self.strike, min=0)

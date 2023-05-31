@@ -19,7 +19,7 @@ N = len(hedging_instruments)
 epochs = 10
 paths = 100
 verbose = True
-T = 365
+T = 3
 
 h_dim = 15
 simple_model: torch.nn.Module = torch.nn.Sequential(
@@ -42,4 +42,3 @@ agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_func
 
 
 agent.fit(contingent_claim, hedging_instruments, epochs, paths, verbose, T)
-

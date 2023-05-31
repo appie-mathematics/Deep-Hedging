@@ -1,9 +1,10 @@
-from typing import List
+from typing import List, Set
 import torch
 from Costs import CostFunction
 from instruments.Claims import Claim
 from tqdm import tqdm
 from instruments.Instrument import Instrument
+from instruments.Primaries import Primary
 
 
 class Agent(torch.nn.Module):
@@ -60,6 +61,7 @@ class Agent(torch.nn.Module):
     def compute_portfolio(self, hedge_paths) -> torch.Tensor:
         # number of time steps
         P, T, N = hedge_paths.shape
+        print(P, T, N)
 
         cash_account = torch.zeros(P, T)
         portfolio_value = torch.zeros(P, T)
@@ -73,15 +75,16 @@ class Agent(torch.nn.Module):
             # select action
             action = self.policy(feature_vector) # (P, N)
             # update positions
-            positions[:, t] = positions[:, t-1] + action
+            positions[:, t] = positions[:, t-1] + action # (P, N)
             # compute cost of action
             cost_of_action = self.cost_function(action, state) # (P, 1)
             # TODO: check if other operations are possible
             spent = (action * hedge_paths[:, t].squeeze()).sum(dim=-1) + cost_of_action # (P, 1)
+            print(cost_of_action)
             # update cash account
             cash_account[:,t] = cash_account[:, t-1] * (1+self.interest_rate) - spent # (P, 1)
             # update portfolio value
-            portfolio_value[:,t] = positions[:, t] @ hedge_paths[:, t].transpose(1,2) #(P, T)
+            portfolio_value[:,t] = (positions[:,t] * hedge_paths[:,t].squeeze()).sum(dim=-1) + cash_account[:,t] # (P, 1)
 
         # return final portfolio value
         return portfolio_value[:,-1] + cash_account[:,-1]
@@ -99,19 +102,22 @@ class Agent(torch.nn.Module):
         # number of paths: P
 
         # 1. check how many primaries are invloved
-        primaries = set([hedge.primary for hedge in hedging_instruments] + [contingent_claim.primary])
+        primaries: Set[Primary] = set([hedge.primary() for hedge in hedging_instruments])
+        primaries.add(contingent_claim.primary())
 
         # 2. generate paths for all the primaries
         primary_paths = {primary: primary.simulate(P, T) for primary in primaries}
 
         # 3. generate paths for all derivatives based on the primary paths
-        hedge_paths = torch.Tensor([instrument.value(primary_paths[instrument.primary]) for instrument in hedging_instruments]).transpose(0,1) # P x T x N
+        hedge_paths = [instrument.value(primary_paths[instrument.primary()]) for instrument in hedging_instruments] # N x tensor(P x T)
+        # convert to P x T x N tensor
+        hedge_paths = torch.stack(hedge_paths, dim=-1) # P x T x N
 
         # 4. compute claim payoff based on primary paths
-        claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary]) # P x 1
+        claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths) # P
-        return self.criterion(portfolio_value, claim_payoff).mean() # scalar
+        return self.criterion(portfolio_value - claim_payoff)
 
 
 
@@ -126,7 +132,7 @@ class Agent(torch.nn.Module):
         :return: None
         """
 
-        for epoch in tqdm(range(epochs)):
+        for epoch in tqdm(range(epochs), desc="Training", leave=False, total=epochs):
             # TODO: define number of time steps
             loss = self.loss(contingent_claim, hedging_instruments, paths, T)
             self.optimizer.zero_grad()
