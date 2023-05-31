@@ -10,9 +10,11 @@ from instruments.Instrument import Instrument
 from instruments.Primaries import GeometricBrownianStock
 
 
-T = 10
-interest_rate = 0
-drift = 0.01
+T = 365
+total_rate = 0.0
+step_interest_rate = (total_rate + 1) ** (1 / T) - 1
+print(step_interest_rate)
+drift = step_interest_rate
 volatility = 0.2
 S0 = 1
 contingent_claim: Claim = EuropeanCall(S0)
@@ -41,7 +43,7 @@ device: torch.device = torch.device('cpu')
 cost_function: CostFunction = PorportionalCost(0.01)
 
 
-agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, interest_rate)
+agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, step_interest_rate)
 
 
 agent.fit(contingent_claim, hedging_instruments, epochs, paths, verbose, T)

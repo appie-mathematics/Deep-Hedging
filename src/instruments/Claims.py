@@ -11,7 +11,7 @@ import torch
 class Claim(ABC):
 
     @abstractmethod
-    def payoff(self, primary_path):
+    def payoff(self, primary_path) -> torch.Tensor:
         # returns payoff of the claim at final timestep
         pass
 

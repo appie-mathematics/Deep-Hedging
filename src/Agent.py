@@ -93,6 +93,8 @@ class Agent(torch.nn.Module):
         # plt.grid()
         # plt.show()
 
+        # print(f"average portfolio value: {portfolio_value.squeeze().mean().item(): .2f}")
+
         # return final portfolio value
         # print("pfv", portfolio_value[:,-1].mean(dim=0).item())
         # print("cash", cash_account[:,-1].mean(dim=0).item())
@@ -126,8 +128,9 @@ class Agent(torch.nn.Module):
         claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths) # P
+        print("mean portfolio value", portfolio_value.mean().item())
+        print("mean claim payoff", claim_payoff.mean().item())
         profit = portfolio_value - claim_payoff # P
-        print(profit.mean())
         return - self.criterion(profit).mean()
 
 
@@ -151,8 +154,8 @@ class Agent(torch.nn.Module):
             loss.backward()
             self.optimizer.step()
             losses.append(loss.item())
-            if verbose:
-                print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
+            #if verbose:
+            #    print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
 
             # eventually add validation
 
