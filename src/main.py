@@ -56,7 +56,7 @@ if pref_gpu:
         pass
 
 
-agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, step_interest_rate)
+agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, hedging_instruments, step_interest_rate)
 
 
-agent.fit(contingent_claim, hedging_instruments, epochs, paths, verbose, T)
+agent.fit(contingent_claim, epochs, paths, verbose, T)
