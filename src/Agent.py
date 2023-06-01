@@ -3,7 +3,7 @@ import torch
 from Costs import CostFunction
 from instruments.Claims import Claim
 from tqdm import tqdm
-from instruments.Instrument import Instrument
+from instruments.Instruments import Instrument
 from instruments.Primaries import Primary
 import matplotlib.pyplot as plt
 
@@ -113,7 +113,7 @@ class Agent(torch.nn.Module):
         # number of paths: P
 
         # 1. check how many primaries are invloved
-        primaries: Set[Primary] = set([hedge.primary() for hedge in hedging_instruments])
+        primaries: set = set([hedge.primary() for hedge in hedging_instruments])
         primaries.add(contingent_claim.primary())
 
         # 2. generate paths for all the primaries

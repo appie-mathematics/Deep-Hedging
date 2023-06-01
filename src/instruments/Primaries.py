@@ -1,7 +1,7 @@
 from abc import abstractmethod
 
 import torch
-from instruments.Instrument import Instrument
+from instruments.Instruments import Instrument
 
 
 class Primary(Instrument):
@@ -11,17 +11,10 @@ class Primary(Instrument):
         # returns P x T tensor of primary paths
         pass
 
-    @abstractmethod
-    def name() -> str:
-        pass
-
-    def __str__(self) -> str:
-        return self.name()
-
     def value(self, primary_path):
         return primary_path
 
-    def primary(self):
+    def primary(self) -> Instrument:
         return self
 
 class GeometricBrownianStock(Primary):

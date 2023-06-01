@@ -4,11 +4,11 @@ import torch
 from Agent import Agent, SimpleAgent
 
 from Costs import CostFunction, PorportionalCost
-from RiskMeasures import Expectation
-from instruments.Claims import Claim, EuropeanCall
-from instruments.Instrument import Instrument
+from instruments.Claims import Claim
+from instruments.Derivatives import EuropeanCall
+from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock
-
+import RiskMeasures
 
 T = 365
 total_rate = 0.0
@@ -17,9 +17,8 @@ print(step_interest_rate)
 drift = step_interest_rate
 volatility = 0.2
 S0 = 1
-contingent_claim: Claim = EuropeanCall(S0)
 stock = GeometricBrownianStock(S0, drift, volatility)
-contingent_claim.attach_primary(stock)
+contingent_claim: Claim = EuropeanCall(stock, S0)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
@@ -38,20 +37,23 @@ simple_model: torch.nn.Module = torch.nn.Sequential(
     ])
 )
 optimizer: torch.optim.Optimizer = torch.optim.Adam(simple_model.parameters(), lr=0.005)
-criterion: torch.nn.Module = Expectation()
-cost_function: CostFunction = PorportionalCost(0.01)
+criterion: torch.nn.Module = RiskMeasures.WorstCase()
+cost_function: CostFunction = PorportionalCost(0)
+
+pref_gpu = True
 
 device: torch.device = torch.device('cpu')
-if torch.cuda.is_available():
-    device = torch.device('cuda')
-    print("CUDA device found.")
+if pref_gpu:
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        print("CUDA device found.")
 
-# mac device
-try:
-    device = torch.device("mps")
-    print("MPS device found.")
-except:
-    pass
+    # mac device
+    try:
+        device = torch.device("mps")
+        print("MPS device found.")
+    except:
+        pass
 
 
 agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, step_interest_rate)
