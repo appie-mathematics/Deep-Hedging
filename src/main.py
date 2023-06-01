@@ -5,6 +5,7 @@ from agents.Agent import Agent
 
 
 from Costs import CostFunction, PorportionalCost
+from agents.RecurrentAgent import RecurrentAgent
 from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
 from instruments.Derivatives import EuropeanCall
@@ -30,7 +31,7 @@ verbose = True
 
 
 
-criterion: torch.nn.Module = RiskMeasures.TailValue(.1)
+criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
 cost_function: CostFunction = PorportionalCost(0.01)
 
 pref_gpu = True
@@ -49,7 +50,7 @@ if pref_gpu:
         pass
 
 
-agent: Agent = SimpleAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate)
+agent: Agent = RecurrentAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate, h_dim=15)
 
 
 agent.fit(contingent_claim, epochs, paths, verbose, T)

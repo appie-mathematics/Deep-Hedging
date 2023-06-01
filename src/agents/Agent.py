@@ -160,18 +160,18 @@ class Agent(torch.nn.Module, ABC):
             plt.plot(losses, label='loss')
             plt.show()
 
-            # fig, ax = plt.subplots()
+            fig, ax = plt.subplots()
 
-            # def animate(i):
-            #     ax.clear()
-            #     sns.histplot(self.profit_logs[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', alpha=0.5, binwidth=.1)
-            #     ax.set_xlim(-10, 10)
-            #     ax.set_ylim(0, 1)
-            #     ax.grid()
-            #     ax.set_title(f"Epoch {i+1}")
-            #     ax.set_xlabel("Profit")
-            #     ax.set_ylabel("Density")
+            def animate(i):
+                ax.clear()
+                sns.histplot(self.profit_logs[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', binwidth=.05)
+                ax.set_xlim(-5, 5)
+                ax.set_ylim(0, 2)
+                ax.grid()
+                ax.set_title(f"Epoch {i+1}")
+                ax.set_xlabel("Profit")
+                ax.set_ylabel("Density")
 
-            # ani = FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
+            ani = FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
 
             plt.show()
