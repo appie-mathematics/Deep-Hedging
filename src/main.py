@@ -22,14 +22,14 @@ contingent_claim: Claim = EuropeanCall(stock, S0)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
-epochs = 100
-paths = 10000
+epochs = 30
+paths = int(1e5)
 verbose = True
 
 
 
-criterion: torch.nn.Module = RiskMeasures.WorstCase()
-cost_function: CostFunction = PorportionalCost(0)
+criterion: torch.nn.Module = RiskMeasures.TailValue(.1)
+cost_function: CostFunction = PorportionalCost(0.01)
 
 pref_gpu = True
 
