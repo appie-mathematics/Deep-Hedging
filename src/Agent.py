@@ -1,6 +1,8 @@
 from abc import ABC, abstractmethod
 from collections import OrderedDict
 from typing import List, Set
+from matplotlib.animation import FuncAnimation
+import numpy as np
 import torch
 from Costs import CostFunction
 from instruments.Claims import Claim
@@ -8,6 +10,7 @@ from tqdm import tqdm
 from instruments.Instruments import Instrument
 from instruments.Primaries import Primary
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 class Agent(torch.nn.Module, ABC):
     """
@@ -38,6 +41,7 @@ class Agent(torch.nn.Module, ABC):
         self.hedging_instruments = hedging_instruments
         self.N = len(hedging_instruments)
         self.to(device)
+        self.profit_logs = torch.Tensor()
 
     @abstractmethod
     def forward(self, state: tuple) -> torch.Tensor: # (P, N)
@@ -93,7 +97,7 @@ class Agent(torch.nn.Module, ABC):
         return portfolio_value[:,-1] + cash_account[:,-1]
 
 
-    def loss(self, contingent_claim: Claim, P, T):
+    def loss(self, contingent_claim: Claim, P, T, i):
         """
         :param contingent_claim: Instrument
         :param paths: int
@@ -122,6 +126,9 @@ class Agent(torch.nn.Module, ABC):
         print("mean portfolio value", portfolio_value.mean().item())
         print("mean claim payoff", claim_payoff.mean().item())
         profit = portfolio_value - claim_payoff # P
+        with torch.no_grad():
+            self.profit_logs[i,:] = profit.detach().cpu()
+
         return - self.criterion(profit).mean()
 
 
@@ -136,10 +143,11 @@ class Agent(torch.nn.Module, ABC):
         :return: None
         """
         losses = []
+        self.profit_logs = torch.Tensor(epochs, paths).cpu()
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             self.train()
-            loss = self.loss(contingent_claim, paths, T)
+            loss = self.loss(contingent_claim, paths, T, epoch)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -150,8 +158,26 @@ class Agent(torch.nn.Module, ABC):
             # eventually add validation
 
         if verbose:
-            plt.plot(losses, label='loss')
+            # plt.plot(losses, label='loss')
+            # plt.show()
+
+            fig, ax = plt.subplots()
+
+            def animate(i):
+                ax.clear()
+                sns.kdeplot(self.profit_logs[i].numpy(), ax=ax, color='blue', alpha=0.7)
+                ax.set_xlim(-10, 10)
+                ax.set_ylim(0, 0.6)
+                ax.grid()
+                ax.set_title(f"Epoch {i+1}")
+                ax.set_xlabel("Profit")
+                ax.set_ylabel("Density")
+
+            FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
+
             plt.show()
+
+
 
 
 
