@@ -31,10 +31,10 @@ verbose = True
 
 
 
-criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
-cost_function: CostFunction = PorportionalCost(0.01)
+criterion: torch.nn.Module = RiskMeasures.CVaR(19)
+cost_function: CostFunction = PorportionalCost(0.00)
 
-pref_gpu = True
+pref_gpu = False
 
 device: torch.device = torch.device('cpu')
 if pref_gpu:
@@ -50,7 +50,7 @@ if pref_gpu:
         pass
 
 
-agent: Agent = RecurrentAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate, h_dim=15)
+agent: Agent = SimpleAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate, h_dim=15)
 
 
 agent.fit(contingent_claim, epochs, paths, verbose, T)

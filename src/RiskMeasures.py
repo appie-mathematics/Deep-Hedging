@@ -62,12 +62,21 @@ class Entropy(RiskMeasure):
         return - 1/self.lambd * torch.log(torch.exp(-self.lambd*portfolio_value).mean())
 
 class CVaR(RiskMeasure):
-    def __init__(self, alpha: float):
+    def __init__(self, lambd: float):
         super().__init__()
-        self.alpha = alpha
+        self.lambd = lambd
 
     def forward(self, portfolio_value: torch.Tensor):
         # portifolio_value: P x 1 (final portfolio value for every path)
         # return: 1 x 1
         # return expected shortfall
-        return 1 / (1 - self.alpha) * torch.relu(portfolio_value).mean()
+
+        def target_function(omega: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
+            return omega + self.lambd * torch.clamp(-omega - x, min=0).mean()
+
+        # try different omega's and return the one that gives the max of target_function (expected shortfall)
+        omega = torch.linspace(-1, 1, portfolio_value.shape[0], device=portfolio_value.device)
+        target = target_function(omega, portfolio_value)
+        omega = omega[target.argmax()]
+
+        return -(omega + self.lambd * torch.clamp(-omega - portfolio_value, min=0).mean())
