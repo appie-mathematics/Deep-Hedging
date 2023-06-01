@@ -66,7 +66,7 @@ class Agent(torch.nn.Module, ABC):
 
         for t in range(1, T):
             # define state
-            state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t]
+            state = hedge_paths[:,:t], cash_account[:,:t-1], positions[:,:t-1]
             # compute action
             action = self.policy(state) # (P, N)
             # update positions
