@@ -10,7 +10,7 @@ from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock
 import RiskMeasures
 
-T = 365
+T = 31
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 print(step_interest_rate)
@@ -26,17 +26,8 @@ epochs = 100
 paths = 10000
 verbose = True
 
-h_dim = 15
-simple_model: torch.nn.Module = torch.nn.Sequential(
-    OrderedDict([
-        ('fc1', torch.nn.Linear(N, h_dim)),
-        ('relu1', torch.nn.ReLU()),
-        ('fc2', torch.nn.Linear(h_dim, h_dim)),
-        ('relu2', torch.nn.ReLU()),
-        ('fc3', torch.nn.Linear(h_dim, N))
-    ])
-)
-optimizer: torch.optim.Optimizer = torch.optim.Adam(simple_model.parameters(), lr=0.005)
+
+
 criterion: torch.nn.Module = RiskMeasures.WorstCase()
 cost_function: CostFunction = PorportionalCost(0)
 
@@ -56,7 +47,7 @@ if pref_gpu:
         pass
 
 
-agent: Agent = SimpleAgent(simple_model, optimizer, criterion, device, cost_function, hedging_instruments, step_interest_rate)
+agent: Agent = SimpleAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate)
 
 
 agent.fit(contingent_claim, epochs, paths, verbose, T)

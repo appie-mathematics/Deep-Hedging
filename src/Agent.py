@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+from collections import OrderedDict
 from typing import List, Set
 import torch
 from Costs import CostFunction
@@ -7,18 +9,20 @@ from instruments.Instruments import Instrument
 from instruments.Primaries import Primary
 import matplotlib.pyplot as plt
 
-class Agent(torch.nn.Module):
+class Agent(torch.nn.Module, ABC):
     """
     Base class for deep hedge agent
     """
+    network: torch.nn.Module
+    optimizer: torch.optim.Optimizer
 
-    def __init__(self, model: torch.nn.Module,
-                 optimizer: torch.optim.Optimizer,
+    def __init__(self,
                  criterion: torch.nn.Module,
                  device: torch.device,
                  cost_function: CostFunction,
                  hedging_instruments: List[Instrument],
-                 interest_rate = 0.05):
+                 interest_rate = 0.05,
+                 lr=0.005):
         """
         :param model: torch.nn.Module
         :param optimizer: torch.optim
@@ -26,38 +30,26 @@ class Agent(torch.nn.Module):
         :param device: torch.device
         """
         super(Agent, self).__init__()
-        self.model = model
-        self.optimizer = optimizer
-        self.criterion = criterion
-        self.cost_function = cost_function
         self.device = device
+        self.lr = lr
+        self.criterion = criterion.to(device)
+        self.cost_function = cost_function
         self.interest_rate = interest_rate
         self.hedging_instruments = hedging_instruments
+        self.N = len(hedging_instruments)
+        self.to(device)
 
-    def forward(self, x):
+    @abstractmethod
+    def forward(self, state: tuple) -> torch.Tensor: # (P, N)
+        pass
+
+
+    def policy(self, state: tuple) -> torch.Tensor:
         """
         :param x: torch.Tensor
         :return: torch.Tensor
         """
-        return self.model(x)
-
-
-    def policy(self, x):
-        """
-        :param x: torch.Tensor
-        :return: torch.Tensor
-        """
-        return self.forward(x)
-
-
-    # takes all the historic data and return feature vector
-    def feature_transform(self, state: tuple) -> torch.Tensor:
-        """
-        :param state: tuple
-        :return: torch.Tensor
-        """
-        return torch.cat(state, dim=-1)
-
+        return self.forward(state)
 
     # returns the final p&l
     def compute_portfolio(self, hedge_paths) -> torch.Tensor:
@@ -72,9 +64,7 @@ class Agent(torch.nn.Module):
             # define state
             state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t]
             # compute action
-            feature_vector = self.feature_transform(state)
-            # select action
-            action = self.policy(feature_vector) # (P, N)
+            action = self.policy(state) # (P, N)
             # update positions
             positions[:, t] = positions[:, t-1] + action # (P, N)
             # compute cost of action
@@ -146,7 +136,6 @@ class Agent(torch.nn.Module):
         :return: None
         """
         losses = []
-        self.model.to(self.device)
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             self.train()
@@ -169,6 +158,34 @@ class Agent(torch.nn.Module):
 
 class SimpleAgent(Agent):
 
+    def __init__(self,
+                criterion: torch.nn.Module,
+                device: torch.device,
+                cost_function: CostFunction,
+                hedging_instruments: List[Instrument],
+                interest_rate = 0.05,
+                lr=0.005,
+                h_dim=15):
+
+        self.N = len(hedging_instruments)
+        network_input_dim = self.input_dim()
+
+        super().__init__(criterion, device, cost_function, hedging_instruments, interest_rate, lr)
+        self.network = torch.nn.Sequential(
+        OrderedDict([
+            ('fc1', torch.nn.Linear(network_input_dim, h_dim)),
+            ('relu1', torch.nn.ReLU()),
+            ('fc2', torch.nn.Linear(h_dim, h_dim)),
+            ('relu2', torch.nn.ReLU()),
+            ('fc3', torch.nn.Linear(h_dim, self.N))
+        ])
+        ).to(self.device)
+        self.optimizer = torch.optim.Adam(self.network.parameters(), lr=lr)
+
+
+    def input_dim(self) -> int:
+        return self.N
+
     def feature_transform(self, state: tuple) -> torch.Tensor:
         """
         :param state: tuple
@@ -184,3 +201,7 @@ class SimpleAgent(Agent):
 
         # return squeezed tensor
         return log_prices.to(self.device)
+
+    def forward(self, state: tuple) -> torch.Tensor:
+        features = self.feature_transform(state) # D x input_dim
+        return self.network(features)
