@@ -1,9 +1,11 @@
 from collections import OrderedDict
 from typing import List
 import torch
-from Agent import Agent, SimpleAgent
+from agents.Agent import Agent
+
 
 from Costs import CostFunction, PorportionalCost
+from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
 from instruments.Derivatives import EuropeanCall
 from instruments.Instruments import Instrument
