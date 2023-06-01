@@ -60,9 +60,9 @@ class Agent(torch.nn.Module, ABC):
         # number of time steps
         P, T, N = hedge_paths.shape
 
-        cash_account = torch.zeros(P, T).to(self.device)
-        portfolio_value = torch.zeros(P, T).to(self.device)
-        positions = torch.zeros(P, T, N).to(self.device)
+        cash_account = torch.zeros(P, T, device=self.device)
+        portfolio_value = torch.zeros(P, T, device=self.device)
+        positions = torch.zeros(P, T, N, device=self.device)
 
         for t in range(1, T):
             # define state
@@ -123,8 +123,6 @@ class Agent(torch.nn.Module, ABC):
         claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]).to(self.device) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths.to(self.device)) # P
-        print("mean portfolio value", portfolio_value.mean().item())
-        print("mean claim payoff", claim_payoff.mean().item())
         profit = portfolio_value - claim_payoff # P
         with torch.no_grad():
             self.profit_logs[i,:] = profit.detach().cpu()
@@ -148,6 +146,7 @@ class Agent(torch.nn.Module, ABC):
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             self.train()
             loss = self.loss(contingent_claim, paths, T, epoch)
+            print(loss.item())
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -158,22 +157,22 @@ class Agent(torch.nn.Module, ABC):
             # eventually add validation
 
         if verbose:
-            # plt.plot(losses, label='loss')
-            # plt.show()
+            plt.plot(losses, label='loss')
+            plt.show()
 
-            fig, ax = plt.subplots()
+            # fig, ax = plt.subplots()
 
-            def animate(i):
-                ax.clear()
-                sns.kdeplot(self.profit_logs[i].numpy(), ax=ax, color='blue', alpha=0.7)
-                ax.set_xlim(-10, 10)
-                ax.set_ylim(0, 0.6)
-                ax.grid()
-                ax.set_title(f"Epoch {i+1}")
-                ax.set_xlabel("Profit")
-                ax.set_ylabel("Density")
+            # def animate(i):
+            #     ax.clear()
+            #     sns.histplot(self.profit_logs[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', alpha=0.5, binwidth=.1)
+            #     ax.set_xlim(-10, 10)
+            #     ax.set_ylim(0, 1)
+            #     ax.grid()
+            #     ax.set_title(f"Epoch {i+1}")
+            #     ax.set_xlabel("Profit")
+            #     ax.set_ylabel("Density")
 
-            ani = FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
+            # ani = FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
 
             plt.show()
 
@@ -210,7 +209,7 @@ class SimpleAgent(Agent):
 
 
     def input_dim(self) -> int:
-        return self.N
+        return self.N + 1
 
     def feature_transform(self, state: tuple) -> torch.Tensor:
         """
@@ -219,14 +218,17 @@ class SimpleAgent(Agent):
         """
         # only know the current price
         paths, cash_account, positions = state
+        P, t, N = paths.shape
 
         last_prices = paths[:, -1, :] # (P, N)
-
         # log prices
         log_prices = torch.log(last_prices) # (P, N)
 
-        # return squeezed tensor
-        return log_prices.to(self.device)
+        times = torch.ones(P, 1, device=self.device) * t # (P, 1)
+        # features is log_prices and t
+        features = torch.cat([log_prices, times], dim=1) # (P, N+1)
+
+        return features.to(self.device)
 
     def forward(self, state: tuple) -> torch.Tensor:
         features = self.feature_transform(state) # D x input_dim

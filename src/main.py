@@ -10,7 +10,7 @@ from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock
 import RiskMeasures
 
-T = 31
+T = 10
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 print(step_interest_rate)
@@ -22,7 +22,7 @@ contingent_claim: Claim = EuropeanCall(stock, S0)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
-epochs = 30
+epochs = 100
 paths = int(1e5)
 verbose = True
 
