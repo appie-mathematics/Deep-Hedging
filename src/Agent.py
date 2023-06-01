@@ -173,7 +173,7 @@ class Agent(torch.nn.Module, ABC):
                 ax.set_xlabel("Profit")
                 ax.set_ylabel("Density")
 
-            FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
+            ani = FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
 
             plt.show()
 
