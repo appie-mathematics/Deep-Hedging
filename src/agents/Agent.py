@@ -107,10 +107,10 @@ class Agent(torch.nn.Module, ABC):
         primaries.add(contingent_claim.primary())
 
         # 2. generate paths for all the primaries
-        primary_paths = {primary: primary.simulate(P, T) for primary in primaries}
+        primary_paths = {primary: primary.simulate(P, T).to(self.device) for primary in primaries}
 
         # 3. generate paths for all derivatives based on the primary paths
-        hedge_paths = [instrument.value(primary_paths[instrument.primary()]) for instrument in self.hedging_instruments] # N x tensor(P x T)
+        hedge_paths = [instrument.value(primary_paths[instrument.primary()]).to(self.device) for instrument in self.hedging_instruments] # N x tensor(P x T)
         # convert to P x T x N tensor
         hedge_paths = torch.stack(hedge_paths, dim=-1) # P x T x N
 
@@ -130,7 +130,7 @@ class Agent(torch.nn.Module, ABC):
 
         hedge_paths, claim_payoff = self.generate_paths(P, T, contingent_claim) # P x T x N, P x 1
 
-        portfolio_value = self.compute_portfolio(hedge_paths.to(self.device), logging) # P
+        portfolio_value = self.compute_portfolio(hedge_paths, logging) # P
         profit = portfolio_value - claim_payoff # P
 
         return profit, claim_payoff
@@ -146,7 +146,7 @@ class Agent(torch.nn.Module, ABC):
         """
         losses = []
 
-        for epoch in tqdm(range(epochs), desc="Training", total=epochs):
+        for epoch in tqdm(range(epochs), desc="Training", total=epochs, leave=False, unit="epoch"):
             self.train()
             pl, _ = self.pl(contingent_claim, paths, T, False)
             loss = - self.criterion(pl)

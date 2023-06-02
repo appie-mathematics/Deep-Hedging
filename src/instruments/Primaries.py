@@ -7,7 +7,7 @@ from instruments.Instruments import Instrument
 class Primary(Instrument):
 
     @abstractmethod
-    def simulate(self, P, T):
+    def simulate(self, P, T) -> torch.Tensor:
         # returns P x T tensor of primary paths
         pass
 
