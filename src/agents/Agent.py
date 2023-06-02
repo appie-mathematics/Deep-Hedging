@@ -42,7 +42,7 @@ class Agent(torch.nn.Module, ABC):
                 print("Running on MPS GPU")
             except:
                 pass
-        
+
         self.device = device
         self.lr = lr
         self.criterion = criterion.to(device)
@@ -51,7 +51,9 @@ class Agent(torch.nn.Module, ABC):
         self.hedging_instruments = hedging_instruments
         self.N = len(hedging_instruments)
         self.to(device)
-        self.profit_logs = torch.Tensor()
+        self.training_logs = dict()
+        self.portfolio_logs = dict()
+        self.validation_logs = dict()
 
     @abstractmethod
     def forward(self, state: tuple) -> torch.Tensor: # (P, N)
@@ -66,7 +68,7 @@ class Agent(torch.nn.Module, ABC):
         return self.forward(state)
 
     # returns the final p&l
-    def compute_portfolio(self, hedge_paths) -> torch.Tensor:
+    def compute_portfolio(self, hedge_paths, logging = False) -> torch.Tensor:
         # number of time steps
         P, T, N = hedge_paths.shape
 
@@ -90,33 +92,19 @@ class Agent(torch.nn.Module, ABC):
             # update portfolio value
             portfolio_value[:,t] = (positions[:,t] * hedge_paths[:,t]).sum(dim=-1) # (P, 1)
 
-        # # plot portfolio value, cash account, positions
-        # plt.plot(portfolio_value.detach().mean(dim=0), label='portfolio value')
-        # plt.plot(cash_account.detach().mean(dim=0), label='cash account')
-        # plt.plot(positions.detach().mean(dim=0), label='positions')
-        # plt.plot(hedge_paths.detach().mean(dim=0), label='hedge paths')
-        # plt.legend()
-        # plt.grid()
-        # plt.show()
 
-        # print(f"average portfolio value: {portfolio_value.squeeze().mean().item(): .2f}")
+        if logging:
+            self.portfolio_logs = {
+                "portfolio_value": portfolio_value.detach().cpu(),
+                "cash_account": cash_account.detach().cpu(),
+                "positions": positions.detach().cpu(),
+                "hedge_paths": hedge_paths.detach().cpu(),
+            }
 
-        # return final portfolio value
-        # print("pfv", portfolio_value[:,-1].mean(dim=0).item())
-        # print("cash", cash_account[:,-1].mean(dim=0).item())
+
         return portfolio_value[:,-1] + cash_account[:,-1]
 
-
-    def loss(self, contingent_claim: Claim, P, T, i):
-        """
-        :param contingent_claim: Instrument
-        :param paths: int
-        :return: None
-        """
-        # number of time steps: T
-        # number of hedging instruments: N
-        # number of paths: P
-
+    def generate_paths(self, P, T, contingent_claim):
         # 1. check how many primaries are invloved
         primaries: set = set([hedge.primary() for hedge in self.hedging_instruments])
         primaries.add(contingent_claim.primary())
@@ -131,18 +119,27 @@ class Agent(torch.nn.Module, ABC):
 
         # 4. compute claim payoff based on primary paths
         claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]).to(self.device) # P x 1
+        return hedge_paths, claim_payoff
 
-        portfolio_value = self.compute_portfolio(hedge_paths.to(self.device)) # P
+    def pl(self, contingent_claim: Claim, P, T, logging = False):
+        """
+        :param contingent_claim: Instrument
+        :param paths: int
+        :return: None
+        """
+        # number of time steps: T
+        # number of hedging instruments: N
+        # number of paths: P
+
+        hedge_paths, claim_payoff = self.generate_paths(P, T, contingent_claim) # P x T x N, P x 1
+
+        portfolio_value = self.compute_portfolio(hedge_paths.to(self.device), logging) # P
         profit = portfolio_value - claim_payoff # P
-        with torch.no_grad():
-            self.profit_logs[i,:] = profit.detach().cpu()
 
-        return - self.criterion(profit).mean()
+        return profit, claim_payoff
 
 
-
-
-    def fit(self, contingent_claim: Claim, epochs = 50, paths = 100, verbose = False, T = 365):
+    def fit(self, contingent_claim: Claim, epochs = 50, paths = 100, verbose = False, T = 365, logging = True):
         """
         :param contingent_claim: Instrument
         :param epochs: int
@@ -151,11 +148,11 @@ class Agent(torch.nn.Module, ABC):
         :return: None
         """
         losses = []
-        self.profit_logs = torch.Tensor(epochs, paths).cpu()
 
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             self.train()
-            loss = self.loss(contingent_claim, paths, T, epoch)
+            pl, _ = self.pl(contingent_claim, paths, T, False)
+            loss = - self.criterion(pl)
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -163,24 +160,30 @@ class Agent(torch.nn.Module, ABC):
             if verbose:
                 print(f"Epoch: {epoch}, Loss: {loss.item(): .2f}")
 
-            # eventually add validation
+            if logging:
+                if "training_PL" not in self.training_logs:
+                    self.training_logs["training_PL"] = torch.Tensor(epochs, paths).cpu()
 
-        if verbose:
-            plt.plot(losses, label='loss')
-            plt.show()
+                self.training_logs["training_PL"][epoch] = pl.detach().cpu()
+        if logging:
+            self.training_logs["training_losses"] = torch.Tensor(losses).cpu()
 
-            fig, ax = plt.subplots()
+        return losses
 
-            def animate(i):
-                ax.clear()
-                sns.histplot(self.profit_logs[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', binwidth=.05)
-                ax.set_xlim(-5, 5)
-                ax.set_ylim(0, 2)
-                ax.grid()
-                ax.set_title(f"Epoch {i+1}")
-                ax.set_xlabel("Profit")
-                ax.set_ylabel("Density")
+    def validate(self, contingent_claim: Claim, paths = 10000, T = 365, logging = True):
+        """
+        :param contingent_claim: Instrument
+        :param epochs: int
+        :param batch_size: int
+        :return: None
+        """
+        with torch.no_grad():
+            self.eval()
+            profit, claim_payoff = self.pl(contingent_claim, paths, T, True)
+            loss = self.criterion(profit)
+            if logging:
+                self.validation_logs["validation_profit"] = profit.detach().cpu()
+                self.validation_logs["validation_claim_payoff"] = claim_payoff.detach().cpu()
+                self.validation_logs["validation_loss"] = loss.detach().cpu()
 
-            ani = FuncAnimation(fig, animate, frames=len(self.profit_logs), repeat=True)
-
-            plt.show()
+            return loss.item()
