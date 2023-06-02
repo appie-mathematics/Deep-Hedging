@@ -1,14 +1,11 @@
 from abc import ABC, abstractmethod
-from collections import OrderedDict
-from typing import List, Set
+from typing import List
 from matplotlib.animation import FuncAnimation
-import numpy as np
 import torch
 from Costs import CostFunction
 from instruments.Claims import Claim
 from tqdm import tqdm
 from instruments.Instruments import Instrument
-from instruments.Primaries import Primary
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -66,7 +63,7 @@ class Agent(torch.nn.Module, ABC):
 
         for t in range(1, T):
             # define state
-            state = hedge_paths[:,:t], cash_account[:,:t-1], positions[:,:t-1]
+            state = hedge_paths[:,:t], cash_account[:,:t], positions[:,:t]
             # compute action
             action = self.policy(state) # (P, N)
             # update positions
@@ -146,13 +143,12 @@ class Agent(torch.nn.Module, ABC):
         for epoch in tqdm(range(epochs), desc="Training", total=epochs):
             self.train()
             loss = self.loss(contingent_claim, paths, T, epoch)
-            print(loss.item())
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
             losses.append(loss.item())
-            #if verbose:
-            #    print("Epoch: {}, Loss: {}".format(epoch, loss.item()))
+            if verbose:
+                print(f"Epoch: {epoch}, Loss: {loss.item(): .2f}")
 
             # eventually add validation
 

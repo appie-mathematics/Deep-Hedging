@@ -1,4 +1,3 @@
-from collections import OrderedDict
 from typing import List
 import torch
 from agents.Agent import Agent
@@ -16,7 +15,6 @@ import RiskMeasures
 T = 10
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
-print(step_interest_rate)
 drift = step_interest_rate
 volatility = 0.2
 S0 = 1
@@ -25,7 +23,7 @@ contingent_claim: Claim = EuropeanCall(stock, S0)
 hedging_instruments: List[Instrument] = [stock]
 N = len(hedging_instruments)
 
-epochs = 100
+epochs = 50
 paths = int(1e5)
 verbose = True
 
@@ -34,23 +32,23 @@ verbose = True
 criterion: torch.nn.Module = RiskMeasures.CVaR(19)
 cost_function: CostFunction = PorportionalCost(0.00)
 
-pref_gpu = False
+pref_gpu = True
 
 device: torch.device = torch.device('cpu')
 if pref_gpu:
     if torch.cuda.is_available():
         device = torch.device('cuda')
-        print("CUDA device found.")
+        print("Running on CUDA GPU")
 
     # mac device
     try:
         device = torch.device("mps")
-        print("MPS device found.")
+        print("Running on MPS GPU")
     except:
         pass
 
 
-agent: Agent = SimpleAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate, h_dim=15)
+agent: Agent = RecurrentAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate, h_dim=15)
 
 
 agent.fit(contingent_claim, epochs, paths, verbose, T)
