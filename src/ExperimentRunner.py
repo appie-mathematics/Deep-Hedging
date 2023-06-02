@@ -36,10 +36,11 @@ class ExperimentRunner:
             epochs = 50,
             paths = int(1e5),
             verbose = True,
-            cost_function: CostFunction = PorportionalCost(0.00)
+            cost_function: CostFunction = PorportionalCost(0.00),
+            h_dim = 15
             ) -> None:
 
-        self.agent: Agent = agents[self.agent_type](criterion, cost_function, hedging_instruments, step_interest_rate, h_dim=15, pref_gpu=self.pref_gpu)
+        self.agent: Agent = agents[self.agent_type](criterion, cost_function, hedging_instruments, step_interest_rate, h_dim=h_dim, pref_gpu=self.pref_gpu)
         self.agent.fit(contingent_claim, epochs, paths, verbose, T, logging=True)
         self.training_logs = self.agent.training_logs
         loss = self.agent.validate(contingent_claim, paths, T, logging=True)
@@ -55,7 +56,7 @@ class ExperimentRunner:
 
         def animate(i):
             ax.clear()
-            sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L')
+            sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', binwidth=0.1)
             ax.set_xlim(-5, 5)
             ax.set_ylim(0, 2)
             ax.grid()
