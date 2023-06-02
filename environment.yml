@@ -1,0 +1,13 @@
+name: DeepHedge
+channels:
+  - pytorch
+  - defaults
+dependencies:
+  - python=3.10
+  - tqdm
+  - seaborn
+  - matplotlib
+  - pytorch::pytorch
+  - pytorch::torchvision
+  - pytorch::torchaudio
+  - numpy
