@@ -36,12 +36,9 @@ class Agent(torch.nn.Module, ABC):
                 device = torch.device('cuda')
                 print("Running on CUDA GPU")
 
-            # # mac device
-            # try:
-            #     device = torch.device("mps")
-            #     print("Running on MPS GPU")
-            # except:
-            #     pass
+            elif torch.backends.mps.is_available() and torch.backends.mps.is_built():
+                device = torch.device("mps")
+                print("Running on MPS GPU")
 
         self.device = device
         self.lr = lr
