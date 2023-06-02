@@ -14,7 +14,7 @@ from instruments.Primaries import GeometricBrownianStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner
 
-T = 5
+T = 30
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 drift = step_interest_rate
@@ -25,11 +25,11 @@ stock = GeometricBrownianStock(S0, drift, volatility)
 
 contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
 hedging_instruments: List[Instrument] = [stock]
-epochs = 50
-paths = int(1e5)
-verbose = True
+epochs = 200
+paths = int(4e6)
+verbose = False
 criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
-cost_function: CostFunction = PorportionalCost(0.01)
+cost_function: CostFunction = PorportionalCost(0.00)
 
 
 
