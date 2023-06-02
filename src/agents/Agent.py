@@ -18,11 +18,11 @@ class Agent(torch.nn.Module, ABC):
 
     def __init__(self,
                  criterion: torch.nn.Module,
-                 device: torch.device,
                  cost_function: CostFunction,
                  hedging_instruments: List[Instrument],
                  interest_rate = 0.05,
-                 lr=0.005):
+                 lr=0.005,
+                 pref_gpu=True):
         """
         :param model: torch.nn.Module
         :param optimizer: torch.optim
@@ -30,6 +30,19 @@ class Agent(torch.nn.Module, ABC):
         :param device: torch.device
         """
         super(Agent, self).__init__()
+        device: torch.device = torch.device('cpu')
+        if pref_gpu:
+            if torch.cuda.is_available():
+                device = torch.device('cuda')
+                print("Running on CUDA GPU")
+
+            # mac device
+            try:
+                device = torch.device("mps")
+                print("Running on MPS GPU")
+            except:
+                pass
+        
         self.device = device
         self.lr = lr
         self.criterion = criterion.to(device)

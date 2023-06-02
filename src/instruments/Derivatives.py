@@ -19,9 +19,10 @@ class Derivative(Claim):
 
 class EuropeanOption(Derivative):
 
-        def __init__(self, primary: Primary, strike: float):
+        def __init__(self, primary: Primary, strike: float, expiry: int):
             super().__init__(primary)
             self.strike = strike
+            self.expiry = expiry
 
 
 class EuropeanCall(EuropeanOption):
@@ -30,21 +31,27 @@ class EuropeanCall(EuropeanOption):
         # primary path is P x T
         return torch.clamp(primary_path[:,-1] - self.strike, min=0)
 
-
 class BSCall(EuropeanCall, Instrument):
 
-    def value(self, primary_path, expiry, drift, volatility) -> torch.Tensor:
-        expiries = expiry - torch.arange(primary_path.shape[1]) * (expiry / primary_path.shape[1])
+    def __init__(self, primary: Primary, strike: float, expiry: float, drift: float, volatility: float):
+        super().__init__(primary, strike, expiry)
+        self.drift = drift
+        self.volatility = volatility
 
-        d1 = (torch.log(primary_path/self.strike) + (drift + 0.5 * volatility**2) * expiries) / (volatility * torch.sqrt(expiries))
+    def value(self, primary_path) -> torch.Tensor:
+        expiries = self.expiry - (torch.arange(primary_path.shape[1]) + 1) * (self.expiry / primary_path.shape[1])
+        expiries[-1] = 0.01
 
-        d2 = d1 - volatility * torch.sqrt(expiries)
+        d1 = (torch.log(primary_path/self.strike) + (self.drift + 0.5 * self.volatility**2) * expiries) / (self.volatility * torch.sqrt(expiries))
+        d2 = d1 - self.volatility * torch.sqrt(expiries)
+        value = primary_path * Normal(0, 1).cdf(d1) - self.strike * torch.exp(-self.drift * expiries) * Normal(0, 1).cdf(d2)
+        value[:,-1] = torch.clamp(primary_path[:,-1] - self.strike, min=0)
 
-        return primary_path * Normal(0, 1).cdf(d1) - self.strike * torch.exp(-drift * expiries) * Normal(0, 1).cdf(d2)
+        return value
 
-    def delta(self, primary_path, expiry, drift, volatility) -> torch.Tensor:
-        expiries = expiry - torch.arange(primary_path.shape[1]) * (expiry / primary_path.shape[1])
+    def delta(self, primary_path) -> torch.Tensor:
+        expiries = self.expiry - torch.arange(primary_path.shape[1]) * (self.expiry / primary_path.shape[1])
 
-        d1 = (torch.log(primary_path / self.strike) + (drift + 0.5 * volatility ** 2) * expiries) / (volatility * torch.sqrt(expiries))
+        d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * expiries) / (self.volatility * torch.sqrt(expiries))
 
         return Normal(0, 1).cdf(d1)

@@ -14,4 +14,3 @@ class Instrument(Claim):
     def payoff(self, primary_path):
         # returns payoff of the instrument at final timestep
         return self.value(primary_path)[:,-1]
-

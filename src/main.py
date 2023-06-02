@@ -7,7 +7,7 @@ from Costs import CostFunction, PorportionalCost
 from agents.RecurrentAgent import RecurrentAgent
 from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
-from instruments.Derivatives import EuropeanCall
+from instruments.Derivatives import EuropeanCall, BSCall
 from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock
 import RiskMeasures
@@ -19,8 +19,8 @@ drift = step_interest_rate
 volatility = 0.2
 S0 = 1
 stock = GeometricBrownianStock(S0, drift, volatility)
-contingent_claim: Claim = EuropeanCall(stock, S0)
-hedging_instruments: List[Instrument] = [stock]
+contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
+hedging_instruments: List[Instrument] = [BSCall(stock, S0*1.5, T, drift, volatility)]
 N = len(hedging_instruments)
 
 epochs = 50
@@ -29,26 +29,15 @@ verbose = True
 
 
 
-criterion: torch.nn.Module = RiskMeasures.CVaR(19)
+criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
 cost_function: CostFunction = PorportionalCost(0.00)
 
 pref_gpu = True
 
-device: torch.device = torch.device('cpu')
-if pref_gpu:
-    if torch.cuda.is_available():
-        device = torch.device('cuda')
-        print("Running on CUDA GPU")
-
-    # mac device
-    try:
-        device = torch.device("mps")
-        print("Running on MPS GPU")
-    except:
-        pass
 
 
-agent: Agent = RecurrentAgent(criterion, device, cost_function, hedging_instruments, step_interest_rate, h_dim=15)
+
+agent: Agent = RecurrentAgent(criterion, cost_function, hedging_instruments, step_interest_rate, h_dim=15, pref_gpu=pref_gpu)
 
 
 agent.fit(contingent_claim, epochs, paths, verbose, T)

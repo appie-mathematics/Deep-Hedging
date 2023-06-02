@@ -9,18 +9,18 @@ from instruments.Instruments import Instrument
 class SimpleAgent(Agent):
 
     def __init__(self,
-                criterion: torch.nn.Module,
-                device: torch.device,
-                cost_function: CostFunction,
-                hedging_instruments: List[Instrument],
-                interest_rate = 0.05,
-                lr=0.005,
-                h_dim=15):
+                 criterion: torch.nn.Module,
+                 cost_function: CostFunction,
+                 hedging_instruments: List[Instrument],
+                 interest_rate = 0.05,
+                 lr=0.005,
+                 pref_gpu=True,
+                 h_dim=15,):
 
         self.N = len(hedging_instruments)
         network_input_dim = self.input_dim()
 
-        super().__init__(criterion, device, cost_function, hedging_instruments, interest_rate, lr)
+        super().__init__(criterion, cost_function, hedging_instruments, interest_rate, lr, pref_gpu)
         self.network = torch.nn.Sequential(
         OrderedDict([
             ('fc1', torch.nn.Linear(network_input_dim, h_dim)),
