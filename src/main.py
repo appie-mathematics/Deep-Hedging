@@ -14,7 +14,7 @@ from instruments.Primaries import GeometricBrownianStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner
 
-T = 50
+T = 5
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 drift = step_interest_rate
@@ -36,4 +36,5 @@ cost_function: CostFunction = PorportionalCost(0.01)
 runner = ExperimentRunner("recurrent", pref_gpu=True)
 res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function)
 ani = runner.training_pnl_animation()
-plt.show()
+print("saving animation")
+ani.save("training_pnl.gif", fps=10)

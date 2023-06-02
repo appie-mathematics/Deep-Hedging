@@ -36,12 +36,12 @@ class Agent(torch.nn.Module, ABC):
                 device = torch.device('cuda')
                 print("Running on CUDA GPU")
 
-            # mac device
-            try:
-                device = torch.device("mps")
-                print("Running on MPS GPU")
-            except:
-                pass
+            # # mac device
+            # try:
+            #     device = torch.device("mps")
+            #     print("Running on MPS GPU")
+            # except:
+            #     pass
 
         self.device = device
         self.lr = lr
