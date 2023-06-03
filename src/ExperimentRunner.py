@@ -49,6 +49,18 @@ class ExperimentRunner:
         return loss
 
 
+    def plot_val_dist(self):
+        # self.validation_logs["validation_profit"] = profit.detach().cpu()
+        # self.validation_logs["validation_claim_payoff"] = claim_payoff.detach().cpu()
+        # self.validation_logs["validation_loss"] = loss.detach().cpu()
+        val_profit = self.validation_logs["validation_profit"]
+        val_payoff = self.validation_logs["validation_claim_payoff"]
+        val_loss = self.validation_logs["validation_loss"]
+        plot = sns.histplot((val_profit - val_payoff).numpy(), stat='density', kde=True, color='blue', label='P&L', binwidth=0.1)
+        plot.set_title(f"Validation P&L, Loss: {val_loss:.2f}")
+        plot.set_xlabel("Profit")
+        plot.set_ylabel("Density")
+        return plot
 
     def training_pnl_animation(self):
         training_pl = self.training_logs["training_PL"]
@@ -57,12 +69,13 @@ class ExperimentRunner:
         def animate(i):
             ax.clear()
             sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', binwidth=0.1)
-            ax.set_xlim(-5, 5)
-            ax.set_ylim(0, 2)
-            ax.grid()
             ax.set_title(f"Epoch {i+1}")
-            ax.set_xlabel("Profit")
-            ax.set_ylabel("Density")
+
+        ax.set_xlim(-5, 5)
+        ax.set_ylim(0, 2)
+        ax.grid()
+        ax.set_xlabel("Profit")
+        ax.set_ylabel("Density")
 
         return FuncAnimation(fig, animate, frames=len(training_pl), repeat=True)
 
