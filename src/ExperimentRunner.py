@@ -82,32 +82,68 @@ class ExperimentRunner:
         cash_account = portfolio_logs["cash_account"][i]
         positions = portfolio_logs["positions"][i]
         hedge_paths = portfolio_logs["hedge_paths"][i]
-        #total_cost = portfolio_logs["total_cost"][i]
+        claim_payoff = portfolio_logs["claim_payoff"][i]
 
-        fig, ax = plt.subplots(2, 2, figsize=(10, 10))
+        fig, ax = plt.subplots(2, 2)
 
-        sns.lineplot(x=range(len(portfolio_value)), y=portfolio_value, ax=ax[0, 0])
-        ax[0, 0].set_title("Portfolio Value")
-        ax[0, 0].set_xlabel("Time")
-        ax[0, 0].set_ylabel("Value")
-
-        sns.lineplot(x=range(len(cash_account)), y=cash_account, ax=ax[0, 1])
-        ax[0, 1].set_title("Cash Account")
-        ax[0, 1].set_xlabel("Time")
-        ax[0, 1].set_ylabel("Value")
-
-        # positions.shape = (T, N) where N is the number of hedging instruments
-        for i in range(positions.shape[1]):
-            sns.lineplot(x=range(len(positions[:, i])), y=positions[:, i], ax=ax[1, 0])
-        ax[1, 0].set_title("Positions")
-        ax[1, 0].set_xlabel("Time")
-        ax[1, 0].set_ylabel("Value")
+        for a in ax.flatten():
+            a.grid(True)  # Adding grid to each subplot
 
         for i in range(hedge_paths.shape[1]):
-            sns.lineplot(x=range(len(hedge_paths[:, i])), y=hedge_paths[:, i], ax=ax[1, 1])
-        ax[1, 1].set_title("Hedge Paths")
-        ax[1, 1].set_xlabel("Time")
-        ax[1, 1].set_ylabel("Value")
+            sns.lineplot(x=range(len(hedge_paths[:, i])), y=hedge_paths[:, i], ax=ax[0, 0])
+        ax[0,0].set_title("Hedge Prices")
+        ax[0,0].set_xlabel("Time")
+        ax[0,0].set_ylabel("Value")
 
-        #fig.suptitle(f"Total Cost: {total_cost}")
+
+        for i in range(positions.shape[1]):
+            sns.lineplot(x=range(len(positions[:, i])), y=positions[:, i], ax=ax[0, 1])
+        ax[0, 1].set_title("Positions")
+        ax[0, 1].set_xlabel("Time")
+        ax[0, 1].set_ylabel("Value")
+        # add line for y = 0
+        ax[0, 1].axhline(y=0, color='black', linestyle='--', alpha=0.5)
+        # make diverging from 0
+        max_value = max(abs(positions.min()), abs(positions.max())) * 1.1
+        ax[0, 1].set_ylim(-max_value, max_value)
+
+
+
+        pnl = portfolio_value + cash_account
+        pnl[-1] -= claim_payoff
+
+        sns.lineplot(x=range(len(pnl)), y=pnl, ax=ax[1, 0])
+        ax[1, 0].set_title("P&L")
+        ax[1, 0].set_xlabel("Time")
+        ax[1, 0].set_ylabel("Value")
+        # add line for y = 0
+        ax[1, 0].axhline(y=0, color='black', linestyle='--', alpha=0.5)
+        # make diverging from 0
+        max_value = max(abs(pnl.min()), abs(pnl.max())) * 1.1
+        ax[1, 0].set_ylim(-max_value, max_value)
+
+        final_cash = cash_account[-1]
+        final_portfolio_value = portfolio_value[-1]
+
+        # Setting up the diverging bars
+        categories = ['Cash', 'PV', 'CC', 'P&L']
+        values = [final_cash, final_portfolio_value, -claim_payoff, pnl[-1]]
+        colors = ['red', 'blue', 'green', 'orange']
+
+        ax[1,1].bar(categories, values, color=colors)
+        ax[1,1].set_title("Final Portfolio Breakdown")
+        ax[1,1].set_xlabel("Category")
+        ax[1,1].set_ylabel("Value")
+
+        # Adding a horizontal line at y=0
+        ax[1,1].hlines(0, -1, len(categories), colors='black', linestyles='dashed')
+
+        # Set y limits to center the plot around 0
+        max_value = max(abs(min(values)), abs(max(values))) * 1.1
+        ax[1,1].set_ylim(-max_value, max_value)
+
+        # Adding value annotations to the bars
+        for i, v in enumerate(values):
+            ax[1,1].text(i, v, f" {v:.2f}", color='black', ha='center', fontweight='bold')
+
         return fig

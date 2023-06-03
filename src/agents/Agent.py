@@ -132,6 +132,8 @@ class Agent(torch.nn.Module, ABC):
 
         portfolio_value = self.compute_portfolio(hedge_paths, logging) # P
         profit = portfolio_value - claim_payoff # P
+        if logging:
+            self.portfolio_logs["claim_payoff"] = claim_payoff.detach().cpu()
 
         return profit, claim_payoff
 
