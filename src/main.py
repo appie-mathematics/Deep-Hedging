@@ -8,7 +8,7 @@ from Costs import CostFunction, PorportionalCost
 from agents.RecurrentAgent import RecurrentAgent
 from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
-from instruments.Derivatives import EuropeanCall, BSCall
+from instruments.Derivatives import EuropeanCall, BSCall, BSPut
 from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock
 import RiskMeasures
@@ -23,8 +23,8 @@ S0 = 1
 stock = GeometricBrownianStock(S0, drift, volatility)
 
 
-contingent_claim: Claim = stock
-hedging_instruments: List[Instrument] = [stock]
+contingent_claim: Claim = BSPut(stock, S0, T, drift, volatility)
+hedging_instruments: List[Instrument] = [BSCall(stock, S0, T, drift, volatility), stock]
 epochs = 100
 paths = int(1e5)
 verbose = True
@@ -34,7 +34,8 @@ cost_function: CostFunction = PorportionalCost(0.00)
 
 
 runner = ExperimentRunner("recurrent", pref_gpu=True)
-res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, 30)
+h_dim = 30
+res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, h_dim)
 print(res)
 runner.plot_training_loss()
 
