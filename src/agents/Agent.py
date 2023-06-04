@@ -107,7 +107,7 @@ class Agent(torch.nn.Module, ABC):
         primaries.add(contingent_claim.primary())
 
         # 2. generate paths for all the primaries
-        primary_paths = {primary: primary.simulate(P, T).to(self.device) for primary in primaries}
+        primary_paths = {primary: primary.simulate(P, T) for primary in primaries}
 
         # 3. generate paths for all derivatives based on the primary paths
         hedge_paths = [instrument.value(primary_paths[instrument.primary()]).to(self.device) for instrument in self.hedging_instruments] # N x tensor(P x T)

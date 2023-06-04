@@ -23,18 +23,18 @@ S0 = 1
 stock = GeometricBrownianStock(S0, drift, volatility)
 
 
-contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
+contingent_claim: Claim = stock
 hedging_instruments: List[Instrument] = [stock]
-epochs = 20
-paths = int(1e4)
+epochs = 100
+paths = int(1e5)
 verbose = True
-criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
+criterion: torch.nn.Module = RiskMeasures.CVaR(20)
 cost_function: CostFunction = PorportionalCost(0.00)
 
 
 
 runner = ExperimentRunner("recurrent", pref_gpu=True)
-res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, 100)
+res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, 30)
 print(res)
 runner.plot_training_loss()
 

@@ -80,3 +80,23 @@ class CVaR(RiskMeasure):
         omega = omega[target.argmax()]
 
         return -(omega + self.lambd * torch.clamp(-omega - portfolio_value, min=0).mean())
+
+
+class ExpectationVariance(RiskMeasure):
+
+    def __init__(self, alpha: float) -> None:
+        super().__init__()
+        self.alpha = alpha
+
+    def forward(self, portfolio_value: torch.Tensor):
+
+        return portfolio_value.mean() - self.alpha * portfolio_value.var()
+
+
+
+class Variance(RiskMeasure):
+
+    def forward(self, portfolio_value: torch.Tensor):
+        # portifolio_value: P x 1 (final portfolio value for every path)
+        # return: 1 x 1
+        return - portfolio_value.var()
