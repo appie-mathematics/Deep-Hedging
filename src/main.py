@@ -10,25 +10,25 @@ from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
 from instruments.Derivatives import EuropeanCall, BSCall, BSPut
 from instruments.Instruments import Instrument
-from instruments.Primaries import GeometricBrownianStock
+from instruments.Primaries import GeometricBrownianStock, HestonStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner
 
-T = 30
+T = 10
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 drift = step_interest_rate
 volatility = 0.2
-S0 = 1
+S0 = 10
 stock = GeometricBrownianStock(S0, drift, volatility)
 
 
-contingent_claim: Claim = BSPut(stock, S0, T, drift, volatility)
-hedging_instruments: List[Instrument] = [BSCall(stock, S0, T, drift, volatility), stock]
+contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
+hedging_instruments: List[Instrument] = [stock]#[BSCall(stock, S0, T, drift, volatility), stock]
 epochs = 100
 paths = int(1e5)
 verbose = True
-criterion: torch.nn.Module = RiskMeasures.CVaR(20)
+criterion: torch.nn.Module = RiskMeasures.TailValue(0.05)
 cost_function: CostFunction = PorportionalCost(0.00)
 
 
@@ -41,7 +41,7 @@ runner.plot_training_loss()
 
 runner.plot_val_dist()
 
-for i in range(5):
+for i in range(1):
     runner.plot_path(i)
 
 plt.show()
