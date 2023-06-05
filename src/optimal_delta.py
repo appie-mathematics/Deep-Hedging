@@ -31,18 +31,14 @@ criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
 cost_function: CostFunction = PorportionalCost(0.0)
 
 
-
 runner = ExperimentRunnerSimple("delta", pref_gpu=True)
 h_dim = 30
 res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, h_dim, extra_params=stock_params)
 print(res)
-#runner.plot_training_loss()
-#plt.show()
 
 runner.plot_val_dist()
 
 for i in range(2):
     runner.plot_path(i)
 
-#ani = runner.training_pnl_animation()
 plt.show()

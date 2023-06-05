@@ -12,10 +12,12 @@ from instruments.Instruments import Instrument
 import matplotlib.pyplot as plt
 import seaborn as sns
 from agents.DeltaAgent import DeltaAgent
+from agents.NakedAgent import NakedAgent
 
 
 agents = {
-    "delta": DeltaAgent
+    "delta": DeltaAgent,
+    "naked": NakedAgent
 }
 
 class ExperimentRunnerSimple:
@@ -40,8 +42,6 @@ class ExperimentRunnerSimple:
             ) -> None:
 
         self.agent: Agent = agents[self.agent_type](criterion, cost_function, hedging_instruments, extra_params, step_interest_rate, h_dim, self.pref_gpu)
-        #self.agent.fit(contingent_claim, epochs, paths, verbose, T, logging=True)
-        #self.training_logs = self.agent.training_logs
         loss = self.agent.validate(contingent_claim, paths, T, logging=True)
         self.validation_logs = self.agent.validation_logs
         self.portfolio_logs = self.agent.portfolio_logs
