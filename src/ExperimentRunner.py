@@ -125,7 +125,6 @@ class ExperimentRunner:
 
 
         pnl = portfolio_value + cash_account
-        pnl[-1] -= claim_payoff
 
         sns.lineplot(x=range(len(pnl)), y=pnl, ax=ax[1, 0])
         ax[1, 0].set_title("P&L")
@@ -142,7 +141,7 @@ class ExperimentRunner:
 
         # Setting up the diverging bars
         categories = ['Cash', 'PV', 'CC', 'P&L']
-        values = [final_cash, final_portfolio_value, -claim_payoff, pnl[-1]]
+        values = [final_cash, final_portfolio_value, -claim_payoff, final_cash + final_portfolio_value -claim_payoff]
         colors = ['red', 'blue', 'green', 'orange']
 
         ax[1,1].bar(categories, values, color=colors)
