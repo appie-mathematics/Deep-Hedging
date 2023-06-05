@@ -56,10 +56,9 @@ class ExperimentRunner:
         val_profit = self.validation_logs["validation_profit"]
         val_payoff = self.validation_logs["validation_claim_payoff"]
         val_loss = self.validation_logs["validation_loss"]
-        plot = sns.histplot((val_profit).numpy(), stat='density', kde=True, color='blue', label='P&L', binwidth=0.1)
+        plot = sns.histplot((val_profit).numpy(), stat='density', kde=False, color='blue', label='P&L', binwidth=0.03)
         plot.set_title(f"Validation P&L, Loss: {val_loss:.2f}")
         plot.set_xlim(-5, 5)
-        plot.set_ylim(0, 2)
         plot.grid()
         plot.set_xlabel("Profit")
         plot.set_ylabel("Density")
@@ -71,7 +70,7 @@ class ExperimentRunner:
 
         def animate(i):
             ax.clear()
-            sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', binwidth=0.1)
+            sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=False, color='blue', label='P&L', binwidth=0.1)
             ax.set_title(f"Epoch {i+1}")
             ax.set_xlim(-5, 5)
             ax.set_ylim(0, 2)

@@ -29,7 +29,7 @@ epochs = 100
 paths = int(1e5)
 verbose = True
 criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
-cost_function: CostFunction = PorportionalCost(0.00)
+cost_function: CostFunction = PorportionalCost(0.0)
 
 
 
@@ -38,6 +38,7 @@ h_dim = 30
 res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, h_dim)
 print(res)
 runner.plot_training_loss()
+plt.show()
 
 runner.plot_val_dist()
 
