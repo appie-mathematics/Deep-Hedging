@@ -73,12 +73,11 @@ class ExperimentRunner:
             ax.clear()
             sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=True, color='blue', label='P&L', binwidth=0.1)
             ax.set_title(f"Epoch {i+1}")
-
-        ax.set_xlim(-5, 5)
-        ax.set_ylim(0, 2)
-        ax.grid()
-        ax.set_xlabel("Profit")
-        ax.set_ylabel("Density")
+            ax.set_xlim(-5, 5)
+            ax.set_ylim(0, 2)
+            ax.grid()
+            ax.set_xlabel("Profit")
+            ax.set_ylabel("Density")
 
         return FuncAnimation(fig, animate, frames=len(training_pl), repeat=True)
 
