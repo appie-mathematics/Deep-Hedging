@@ -19,3 +19,6 @@ class Claim(ABC):
     def primary(self):
          # return primary of the claim
         pass
+
+    def delta(self, primary_path):
+        return None

@@ -23,7 +23,7 @@ S0 = 1
 stock = GeometricBrownianStock(S0, drift, volatility)
 
 
-contingent_claim: Claim = EuropeanCall(stock, S0, T)
+contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
 hedging_instruments: List[Instrument] = [stock]
 epochs = 100
 paths = int(1e5)

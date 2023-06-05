@@ -125,9 +125,7 @@ class Agent(torch.nn.Module, ABC):
         # convert to P x T x N tensor
         hedge_paths = torch.stack(hedge_paths, dim=-1) # P x T x N
 
-        # 4. compute claim payoff based on primary paths
-        claim_payoff = contingent_claim.payoff(primary_paths[contingent_claim.primary()]).to(self.device) # P x 1
-        return hedge_paths, claim_payoff
+        return hedge_paths, primary_paths[contingent_claim.primary()]
 
     def pl(self, contingent_claim: Claim, P, T, logging = False):
         """
@@ -139,12 +137,15 @@ class Agent(torch.nn.Module, ABC):
         # number of hedging instruments: N
         # number of paths: P
 
-        hedge_paths, claim_payoff = self.generate_paths(P, T, contingent_claim) # P x T x N, P x 1
+        hedge_paths, claim_path = self.generate_paths(P, T, contingent_claim) # P x T x N, P x 1
+        claim_payoff = contingent_claim.payoff(claim_path).to(self.device) # P x 1
 
         portfolio_value = self.compute_portfolio(hedge_paths, logging) # P
         profit = portfolio_value - claim_payoff # P
         if logging:
             self.portfolio_logs["claim_payoff"] = claim_payoff.detach().cpu()
+            delta = contingent_claim.delta(claim_path)
+            self.portfolio_logs["claim_delta"] = delta
 
         return profit, claim_payoff
 

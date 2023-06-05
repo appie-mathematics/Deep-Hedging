@@ -16,6 +16,9 @@ class Derivative(Claim):
     def primary(self) -> Primary:
         return self._primary
 
+    def delta(self, primary_path) -> torch.Tensor:
+        pass
+
 
 class EuropeanOption(Derivative):
 

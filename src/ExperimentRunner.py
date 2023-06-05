@@ -98,6 +98,7 @@ class ExperimentRunner:
         positions = portfolio_logs["positions"][i]
         hedge_paths = portfolio_logs["hedge_paths"][i]
         claim_payoff = portfolio_logs["claim_payoff"][i]
+        claim_delta = portfolio_logs["claim_delta"][i]
 
         fig, ax = plt.subplots(2, 2)
 
@@ -121,6 +122,11 @@ class ExperimentRunner:
         # make diverging from 0
         max_value = max(abs(positions.min()), abs(positions.max())) * 1.1
         ax[0, 1].set_ylim(-max_value, max_value)
+
+        if claim_delta is not None:
+            # add the delta of the claim to the graph
+            ax[0, 1] = sns.lineplot(x=range(len(claim_delta)), y=claim_delta, ax=ax[0, 1], color='black', label='Claim Delta')
+
 
 
 
