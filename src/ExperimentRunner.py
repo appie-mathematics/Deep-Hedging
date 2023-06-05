@@ -86,6 +86,8 @@ class ExperimentRunner:
         plot.set_title("Training Loss")
         plot.set_xlabel("Epoch")
         plot.set_ylabel("Loss")
+        plot.grid()
+        plot.set_yscale('log')
         return plot
 
 

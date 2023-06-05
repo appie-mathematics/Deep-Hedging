@@ -14,7 +14,7 @@ from instruments.Primaries import GeometricBrownianStock, HestonStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner
 
-T = 10
+T = 31
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 drift = step_interest_rate
