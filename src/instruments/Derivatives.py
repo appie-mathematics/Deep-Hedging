@@ -56,7 +56,7 @@ class BSCall(EuropeanCall, Instrument):
         return value
 
     def delta(self, primary_path) -> torch.Tensor:
-        expiries = self.expiry - torch.arange(primary_path.shape[1]) * (self.expiry / primary_path.shape[1])
+        expiries = self.expiry - (torch.arange(primary_path.shape[1]) + 1) * (self.expiry / primary_path.shape[1])
 
         d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * expiries) / (self.volatility * torch.sqrt(expiries))
 
@@ -71,7 +71,7 @@ class BSPut(EuropeanPut, Instrument):
             self.volatility = volatility
 
         def value(self, primary_path) -> torch.Tensor:
-            expiries = self.expiry - torch.arange(primary_path.shape[1]) * (self.expiry / primary_path.shape[1])
+            expiries = self.expiry - (torch.arange(primary_path.shape[1]) + 1) * (self.expiry / primary_path.shape[1])
 
             d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * expiries) / (
                         self.volatility * torch.sqrt(expiries))
@@ -82,9 +82,9 @@ class BSPut(EuropeanPut, Instrument):
             return value
 
         def delta(self, primary_path) -> torch.Tensor:
-            expiries = self.expiry - torch.arange(primary_path.shape[1]) * (self.expiry / primary_path.shape[1])
+            expiries = self.expiry - (torch.arange(primary_path.shape[1]) + 1) * (self.expiry / primary_path.shape[1])
 
             d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * expiries) / (
                         self.volatility * torch.sqrt(expiries))
 
-            return Normal(0, 1).cdf(d1)
+            return Normal(0, 1).cdf(d1) - 1
