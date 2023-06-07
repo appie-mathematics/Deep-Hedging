@@ -60,10 +60,10 @@ class BSCall(EuropeanCall, Instrument):
 
     def delta(self, primary_path) -> torch.Tensor:
         expiries = self.expiry - (torch.arange(primary_path.shape[1]) + 1) * (self.expiry / primary_path.shape[1])
-
-        d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * expiries) / (self.volatility * torch.sqrt(expiries))
-
-        return Normal(0, 1).cdf(d1)
+        eps = 1e-8
+        d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * (expiries + eps)) / (self.volatility * torch.sqrt(expiries + eps))
+        delta = Normal(0, 1).cdf(d1)
+        return delta
 
 
 class BSPut(EuropeanPut, Instrument):

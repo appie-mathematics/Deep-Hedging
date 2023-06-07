@@ -21,7 +21,7 @@ class DeltaAgent(Agent):
                  ):
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, lr, pref_gpu)
         self.strike, self.expiry, self.drift, self.volatility = stock_params
-        
+
         #initialize deltas to zero
         self.current_delta = torch.zeros(1, len(hedging_instruments), device=self.device)
 
@@ -29,14 +29,14 @@ class DeltaAgent(Agent):
         d1 = (torch.log(last_prices / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * days_to_expiry) / (self.volatility * np.sqrt(days_to_expiry))
 
         return Normal(0, 1).cdf(d1)
-    
+
     def feature_transform(self, state: tuple) -> torch.Tensor:
         """
         :param state: tuple
         :return: torch.Tensor
         """
         # only know the current price
-        paths, cash_account, positions = state
+        paths, cash_account, positions, T = state
         P, t, N = paths.shape
 
         last_prices = paths[:, -1, :]
@@ -48,11 +48,7 @@ class DeltaAgent(Agent):
         self.current_delta = delta
 
         return delta_diff.to(self.device)
-    
+
     def forward(self, state: tuple) -> torch.Tensor:
         action = self.feature_transform(state) # D x input_dim
         return action
-
-
-
-        

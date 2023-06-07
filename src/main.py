@@ -14,21 +14,22 @@ from instruments.Primaries import GeometricBrownianStock, HestonStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner
 
+seed = 1337
+torch.manual_seed(seed)
+
 T = 31
 total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 drift = step_interest_rate
-volatility = 0.2
+volatility = 0.1
 S0 = 1
 stock = GeometricBrownianStock(S0, drift, volatility)
-
-
 contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
 hedging_instruments: List[Instrument] = [stock]
-epochs = 10
-paths = int(5e4)
+epochs = 100
+paths = int(5e5)
 verbose = True
-criterion: torch.nn.Module = RiskMeasures.CVaR(.5)
+criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
 cost_function: CostFunction = PorportionalCost(0.0)
 
 
@@ -39,8 +40,10 @@ res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_inter
 print(res)
 runner.plot_training_loss()
 plt.show()
-ani = runner.training_pnl_animation()
-plt.show()
+animate = False
+if animate:
+    ani = runner.training_pnl_animation()
+    plt.show()
 
 
 runner.plot_val_dist()

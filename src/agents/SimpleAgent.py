@@ -42,14 +42,14 @@ class SimpleAgent(Agent):
         :return: torch.Tensor
         """
         # only know the current price
-        paths, cash_account, positions = state
+        paths, cash_account, positions, T = state
         P, t, N = paths.shape
 
         last_prices = paths[:, -1, :] # (P, N)
         # log prices
         log_prices = torch.log(last_prices) # (P, N)
 
-        times = torch.ones(P, 1, device=self.device) * t # (P, 1)
+        times = torch.ones(P, 1, device=self.device) * (T-t) # (P, 1)
         # features is log_prices and t
         features = torch.cat([log_prices, times], dim=1) # (P, N+1)
 

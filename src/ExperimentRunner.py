@@ -60,12 +60,12 @@ class ExperimentRunner:
         val_payoff = self.validation_logs["validation_claim_payoff"]
         price = val_payoff.mean()
         val_loss = self.validation_logs["validation_loss"]
-        plot = sns.histplot((val_profit+price).numpy(), stat='density', kde=False, color='blue', label='P&L', binwidth=0.03)
-        plot.set_title(f"Validation P&L, Loss: {val_loss:.2f}")
+        plot = sns.histplot((val_profit+price).numpy(), stat='count', kde=False, color='blue', label='P&L', binwidth=0.03)
+        plot.set_title(f"Validation P&L, N: {len(val_profit)}, Loss: {val_loss:.2f}")
         plot.set_xlim(-3, 3)
         plot.grid()
         plot.set_xlabel("P&L")
-        plot.set_ylabel("Emperical Probability Density")
+        plot.set_ylabel(f"Frequency")
         return plot
 
     def training_pnl_animation(self):
@@ -74,13 +74,14 @@ class ExperimentRunner:
 
         def animate(i):
             ax.clear()
-            ax.set_title(f"Epoch {i+1}")
+            ax.set_title(f"Training P&L, N: {len(training_pl[i])}, Epoch: {i+1}")
             ax.set_xlim(-4, 4)
-            ax.set_ylim(0, 2)
             ax.grid()
             ax.set_xlabel("P&L")
-            ax.set_ylabel("Emperical Probability Density")
-            sns.histplot(training_pl[i].numpy(), ax=ax, stat='density', kde=False, color='blue', label='P&L', bins=1000)
+            ax.set_ylabel("Frequency")
+            ax.set_ylim(0, len(training_pl[i]) / 2)
+            sns.histplot(training_pl[i].numpy(), ax=ax, stat='count', kde=False, color='blue', label='P&L', binwidth=0.15)
+
 
         return FuncAnimation(fig, animate, frames=len(training_pl), repeat=True)
 
@@ -118,7 +119,7 @@ class ExperimentRunner:
 
         for i in range(hedge_paths.shape[1]):
             sns.lineplot(x=range(len(hedge_paths[:, i])), y=hedge_paths[:, i], ax=ax[0, 0], label=hedge_names[i])
-        ax[0,0].set_title("Price of Heding Instruments")
+        ax[0,0].set_title("Price of Hedging Instruments")
         ax[0,0].set_xlabel("Time")
         ax[0,0].set_ylabel("Price [€]")
         ax[0,0].legend()
