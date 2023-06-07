@@ -4,7 +4,7 @@ import torch
 from agents.Agent import Agent
 
 
-from Costs import CostFunction, PorportionalCost
+from Costs import CostFunction, PorportionalCost, FixedCost
 from agents.RecurrentAgent import RecurrentAgent
 from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
@@ -13,7 +13,6 @@ from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock, HestonStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner, SimpleRunner, plot_dists
-from src.Costs import FixedCost
 
 seed = 1337
 torch.manual_seed(seed)
