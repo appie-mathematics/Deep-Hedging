@@ -13,6 +13,7 @@ from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock, HestonStock
 import RiskMeasures
 from ExperimentRunner import ExperimentRunner, SimpleRunner, plot_dists
+from src.Costs import FixedCost
 
 seed = 1337
 torch.manual_seed(seed)
@@ -30,8 +31,8 @@ epochs = 10
 paths = int(5e4)
 verbose = True
 criterion: torch.nn.Module = RiskMeasures.WorstCase()
-prop_cost = 0.5
-cost_function: CostFunction = PorportionalCost(prop_cost)
+prop_cost = 0.01
+cost_function: CostFunction = PorportionalCost(prop_cost) + FixedCost(0.01)
 
 
 stock_params = [S0, T, drift, volatility] #strike, expiry, rate, volatility
@@ -45,4 +46,4 @@ res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_inter
 print(res)
 
 filename = f"output/{runner.agent_type}_hd_{h_dim}_e_{epochs}_p_{paths}_s_{seed}_pc_{prop_cost: .1f}"
-runner.plot_runner(animate=True, save=False, file_prefix=filename, n=2)
+runner.plot_runner(animate=False, save=False, file_prefix=filename, n=2)
