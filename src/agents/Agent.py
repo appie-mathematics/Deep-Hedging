@@ -181,7 +181,7 @@ class Agent(torch.nn.Module, ABC):
 
         return losses
 
-    def validate(self, contingent_claim: Claim, paths = 10000, T = 365, logging = True):
+    def validate(self, contingent_claim: Claim, paths = int(1e6), T = 365, logging = True):
         """
         :param contingent_claim: Instrument
         :param epochs: int

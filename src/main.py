@@ -8,7 +8,7 @@ from Costs import CostFunction, PorportionalCost
 from agents.RecurrentAgent import RecurrentAgent
 from agents.SimpleAgent import SimpleAgent
 from instruments.Claims import Claim
-from instruments.Derivatives import EuropeanCall, BSCall, BSPut
+from instruments.Derivatives import EuropeanCall, BSCall, BSPut, EuropeanPut
 from instruments.Instruments import Instrument
 from instruments.Primaries import GeometricBrownianStock, HestonStock
 import RiskMeasures
@@ -25,10 +25,10 @@ stock = GeometricBrownianStock(S0, drift, volatility)
 
 contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
 hedging_instruments: List[Instrument] = [stock]
-epochs = 100
-paths = int(1e5)
+epochs = 10
+paths = int(5e4)
 verbose = True
-criterion: torch.nn.Module = RiskMeasures.TailValue(.05)
+criterion: torch.nn.Module = RiskMeasures.CVaR(.5)
 cost_function: CostFunction = PorportionalCost(0.0)
 
 
@@ -39,11 +39,11 @@ res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_inter
 print(res)
 runner.plot_training_loss()
 plt.show()
+ani = runner.training_pnl_animation()
+plt.show()
+
 
 runner.plot_val_dist()
-
 for i in range(5):
     runner.plot_path(i)
-
-ani = runner.training_pnl_animation()
 plt.show()

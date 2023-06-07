@@ -62,9 +62,9 @@ class Entropy(RiskMeasure):
         return - 1/self.lambd * torch.log(torch.exp(-self.lambd*portfolio_value).mean())
 
 class CVaR(RiskMeasure):
-    def __init__(self, lambd: float):
+    def __init__(self, p: float):
         super().__init__()
-        self.lambd = lambd
+        self.lambd = 1/p - 1
 
     def forward(self, portfolio_value: torch.Tensor):
         # portifolio_value: P x 1 (final portfolio value for every path)
