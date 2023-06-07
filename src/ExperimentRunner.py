@@ -189,7 +189,7 @@ class ExperimentRunner:
         return fig
 
 
-    def plot_runner(self, animate=False, save=False, file_prefix='plot'):
+    def plot_runner(self, animate=False, save=False, file_prefix='plot', n = 5, compare = []):
         self.plot_training_loss()
         if save:
             plt.savefig(f'{file_prefix}_training_loss.pdf')
@@ -201,13 +201,16 @@ class ExperimentRunner:
                 ani.save(f'{file_prefix}_training_animation.mp4', writer='ffmpeg')
             plt.show()
 
-        self.plot_val_dist()
+        if len(compare) > 0:
+            plot_dists([*compare, self])
+        else:
+            self.plot_val_dist()
         if save:
             plt.savefig(f'{file_prefix}_val_dist.pdf')
         plt.show()
 
 
-        for i in range(5):
+        for i in range(n):
             self.plot_path(i)
             if save:
                 plt.savefig(f'{file_prefix}_path_{i}.pdf')
@@ -241,8 +244,6 @@ class SimpleRunner(ExperimentRunner):
         return loss
 
     def plot_runner(self, animate=False, save=False, file_prefix='plot'):
-
-
         self.plot_val_dist()
         if save:
             plt.savefig(f'{file_prefix}_val_dist.pdf')
