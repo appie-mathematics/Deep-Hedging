@@ -55,21 +55,8 @@ class ExperimentRunner:
         return loss
 
 
-    def plot_val_dist(self):
-        # self.validation_logs["validation_profit"] = profit.detach().cpu()
-        # self.validation_logs["validation_claim_payoff"] = claim_payoff.detach().cpu()
-        # self.validation_logs["validation_loss"] = loss.detach().cpu()
-        val_profit = self.validation_logs["validation_profit"]
-        val_payoff = self.validation_logs["validation_claim_payoff"]
-        price = val_payoff.mean()
-        val_loss = self.validation_logs["validation_loss"]
-        plot = sns.histplot((val_profit+price).numpy(), stat='count', kde=False, color='blue', label='P&L', binwidth=0.03)
-        plot.set_title(f"Validation P&L, N: {len(val_profit)}, Loss: {val_loss:.2f}")
-        plot.set_xlim(-3, 3)
-        plot.grid()
-        plot.set_xlabel("P&L")
-        plot.set_ylabel(f"Frequency")
-        return plot
+    def plot_val_dist(self, save=False, file_prefix='plot'):
+        return plot_dists([self], save, file_prefix)
 
     def training_pnl_animation(self):
         training_pl = self.training_logs["training_PL"]
@@ -200,12 +187,7 @@ class ExperimentRunner:
             if save:
                 ani.save(f'{file_prefix}_training_animation.mp4', writer='ffmpeg')
 
-        if len(compare) > 0:
-            plot_dists([*compare, self], save=save, file_prefix=file_prefix)
-        else:
-            self.plot_val_dist()
-            if save:
-                plt.savefig(f'{file_prefix}_val_dist.pdf')
+        plot_dists([*compare, self], save=save, file_prefix=file_prefix)
         plt.show()
 
 
@@ -263,5 +245,5 @@ def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot'):
     plot.grid()
     plot.legend()
     if save:
-        plt.savefig(f'{file_prefix}_val_dist.pdf')
+        plt.savefig(f'{file_prefix}_comp_dist.pdf')
     return plot
