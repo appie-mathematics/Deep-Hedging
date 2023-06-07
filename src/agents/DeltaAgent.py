@@ -14,7 +14,7 @@ class DeltaAgent(Agent):
                  cost_function: CostFunction,
                  hedging_instruments: List[Instrument],
                  stock_params,
-                 interest_rate = 0.05,
+                 interest_rate = 0.0,
                  lr=0.005,
                  pref_gpu=True,
                  h_dim=15,

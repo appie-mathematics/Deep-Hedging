@@ -12,7 +12,7 @@ class SimpleAgent(Agent):
                  criterion: torch.nn.Module,
                  cost_function: CostFunction,
                  hedging_instruments: List[Instrument],
-                 interest_rate = 0.05,
+                 interest_rate = 0.0,
                  lr=0.005,
                  pref_gpu=True,
                  h_dim=15,):

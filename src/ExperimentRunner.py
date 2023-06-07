@@ -14,10 +14,13 @@ from agents.RecurrentAgent import RecurrentAgent
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from agents.DeltaAgent import DeltaAgent
+
 
 agents = {
     "simple": SimpleAgent,
-    "recurrent": RecurrentAgent
+    "recurrent": RecurrentAgent,
+    "delta": DeltaAgent
 }
 
 class ExperimentRunner:
@@ -184,3 +187,79 @@ class ExperimentRunner:
             ax[1,1].text(i, v, f" {v:.2f}", color='black', ha='center', fontweight='bold')
 
         return fig
+
+
+    def plot_runner(self, animate=False, save=False, file_prefix='plot'):
+        self.plot_training_loss()
+        if save:
+            plt.savefig(f'{file_prefix}_training_loss.pdf')
+        plt.show()
+
+        if animate:
+            ani = self.training_pnl_animation()
+            if save:
+                ani.save(f'{file_prefix}_training_animation.mp4', writer='ffmpeg')
+            plt.show()
+
+        self.plot_val_dist()
+        if save:
+            plt.savefig(f'{file_prefix}_val_dist.pdf')
+        plt.show()
+
+
+        for i in range(5):
+            self.plot_path(i)
+            if save:
+                plt.savefig(f'{file_prefix}_path_{i}.pdf')
+            plt.show()
+
+
+
+class SimpleRunner(ExperimentRunner):
+
+
+    def run(self,
+            contingent_claim: Claim,
+            hedging_instruments: List[Instrument],
+            criterion: torch.nn.Module,
+            T = 10,
+            step_interest_rate = 0.0,
+            epochs = 50,
+            paths = int(1e5),
+            verbose = True,
+            cost_function: CostFunction = PorportionalCost(0.00),
+            h_dim = 15,
+            extra_params = None,
+            ) -> None:
+
+        self.agent = agents[self.agent_type](criterion, cost_function, hedging_instruments, extra_params,  step_interest_rate, h_dim=h_dim, pref_gpu=self.pref_gpu)
+        loss = self.agent.validate(contingent_claim, int(1e6), T, logging=True)
+        self.validation_logs = self.agent.validation_logs
+        self.portfolio_logs = self.agent.portfolio_logs
+        self.claim = contingent_claim
+        self.hedging_instruments = hedging_instruments
+        return loss
+
+    def plot_runner(self, animate=False, save=False, file_prefix='plot'):
+
+
+        self.plot_val_dist()
+        if save:
+            plt.savefig(f'{file_prefix}_val_dist.pdf')
+        plt.show()
+
+
+
+def plot_dists(runners: List[ExperimentRunner]):
+    # plot_val_dist for multiple runners
+    plot = plt.figure()
+    for runner in runners:
+        val_profit = runner.validation_logs["validation_profit"]
+        val_payoff = runner.validation_logs["validation_claim_payoff"]
+        price = val_payoff.mean()
+        val_loss = runner.validation_logs["validation_loss"]
+        plot = sns.histplot((val_profit+price).numpy(), stat='count', kde=False, label=f'{runner.agent_type}, N: {len(val_profit)}, Loss: {val_loss:.2f}', binwidth=0.03, alpha=0.5)
+    plot.set_xlim(-3, 3)
+    plot.grid()
+    plot.legend()
+    return plot
