@@ -62,8 +62,8 @@ class BSCall(EuropeanCall, Instrument):
         expiries = self.expiry - (torch.arange(primary_path.shape[1]) + 1) * (self.expiry / primary_path.shape[1])
         eps = 1e-8
         d1 = (torch.log(primary_path / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * (expiries + eps)) / (self.volatility * torch.sqrt(expiries + eps))
-        delta = Normal(0, 1).cdf(d1)
-        return delta
+        return Normal(0, 1).cdf(d1)
+
 
 
 class BSPut(EuropeanPut, Instrument):

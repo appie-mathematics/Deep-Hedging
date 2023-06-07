@@ -26,8 +26,8 @@ class DeltaAgent(Agent):
         self.current_delta = torch.zeros(1, len(hedging_instruments), device=self.device)
 
     def get_delta(self, last_prices, days_to_expiry):
-        d1 = (torch.log(last_prices / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * days_to_expiry) / (self.volatility * np.sqrt(days_to_expiry))
-
+        eps = 1e-8
+        d1 = (torch.log(last_prices / self.strike) + (self.drift + 0.5 * self.volatility ** 2) * (days_to_expiry + eps)) / (self.volatility * torch.sqrt(days_to_expiry + eps))
         return Normal(0, 1).cdf(d1)
 
     def feature_transform(self, state: tuple) -> torch.Tensor:

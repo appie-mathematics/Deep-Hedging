@@ -199,7 +199,6 @@ class ExperimentRunner:
             ani = self.training_pnl_animation()
             if save:
                 ani.save(f'{file_prefix}_training_animation.mp4', writer='ffmpeg')
-            plt.show()
 
         if len(compare) > 0:
             plot_dists([*compare, self])
