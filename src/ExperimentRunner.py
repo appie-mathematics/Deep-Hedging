@@ -70,7 +70,7 @@ class ExperimentRunner:
             ax.set_xlabel("P&L")
             ax.set_ylabel("Frequency")
             ax.set_ylim(0, len(training_pl[i]) / 2)
-            sns.histplot(training_pl[i].numpy(), ax=ax, stat='count', kde=False, color='blue', label='P&L', binwidth=0.15)
+            sns.histplot(training_pl[i].numpy(), ax=ax, stat='count', kde=False, color='blue', label='P&L', binwidth=0.1)
 
 
         return FuncAnimation(fig, animate, frames=len(training_pl), repeat=True)
