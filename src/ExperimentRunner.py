@@ -235,7 +235,7 @@ class SimpleRunner(ExperimentRunner):
 
 
 
-def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot'):
+def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot', x_lim=2):
     # plot_val_dist for multiple runners
     plot = plt.figure()
     for runner in runners:
@@ -245,7 +245,7 @@ def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot'):
         val_loss = runner.validation_logs["validation_loss"]
         plot = sns.histplot((val_profit+price).numpy(), stat='count', kde=False, label=f'{runner.agent_type}, N: {len(val_profit)}, Loss: {val_loss:.2f}', binwidth=0.03, alpha=0.5)
     plot.set_title("P&L Distribution")
-    plot.set_xlim(-3, 3)
+    plot.set_xlim(x_lim, x_lim)
     plot.grid()
     plot.legend()
     if save:
