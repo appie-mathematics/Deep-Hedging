@@ -173,6 +173,9 @@ class ExperimentRunner:
         for i, v in enumerate(values):
             ax[1,1].text(i, v, f" {v:.2f}", color='black', ha='center', fontweight='bold')
 
+        # make sure the text does not overlap
+        fig.tight_layout()
+
         return fig
 
 
