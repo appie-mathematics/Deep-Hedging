@@ -189,16 +189,16 @@ class ExperimentRunner:
             ani = self.training_pnl_animation()
             if save:
                 ani.save(f'{file_prefix}_training_animation.mp4', writer='ffmpeg')
+            plt.show()
+
 
         plot_dists([*compare, self], save=save, file_prefix=file_prefix)
-        plt.show()
-
 
         for i in range(n):
             self.plot_path(i)
             if save:
                 plt.savefig(f'{file_prefix}_path_{i}.pdf')
-            plt.show()
+        plt.show()
 
 
 
