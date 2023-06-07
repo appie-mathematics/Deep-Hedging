@@ -201,11 +201,11 @@ class ExperimentRunner:
                 ani.save(f'{file_prefix}_training_animation.mp4', writer='ffmpeg')
 
         if len(compare) > 0:
-            plot_dists([*compare, self])
+            plot_dists([*compare, self], save=save, file_prefix=file_prefix)
         else:
             self.plot_val_dist()
-        if save:
-            plt.savefig(f'{file_prefix}_val_dist.pdf')
+            if save:
+                plt.savefig(f'{file_prefix}_val_dist.pdf')
         plt.show()
 
 
@@ -250,7 +250,7 @@ class SimpleRunner(ExperimentRunner):
 
 
 
-def plot_dists(runners: List[ExperimentRunner]):
+def plot_dists(runners: List[ExperimentRunner], save=False, file_prefix='plot'):
     # plot_val_dist for multiple runners
     plot = plt.figure()
     for runner in runners:
@@ -262,4 +262,6 @@ def plot_dists(runners: List[ExperimentRunner]):
     plot.set_xlim(-3, 3)
     plot.grid()
     plot.legend()
+    if save:
+        plt.savefig(f'{file_prefix}_val_dist.pdf')
     return plot
