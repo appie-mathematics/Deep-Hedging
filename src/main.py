@@ -26,23 +26,32 @@ S0 = 1
 stock = GeometricBrownianStock(S0, drift, volatility)
 contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
 hedging_instruments: List[Instrument] = [stock]
-epochs = 10
+epochs = 50
 paths = int(5e4)
 verbose = True
 criterion: torch.nn.Module = RiskMeasures.WorstCase()
-prop_cost = 0.01
-cost_function: CostFunction = PorportionalCost(prop_cost) + FixedCost(0.01)
+prop_cost = 0.00
+cost_function: CostFunction = PorportionalCost(prop_cost)
 
+runners = []
+naked_runner = SimpleRunner("naked", pref_gpu=True)
+res = naked_runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function)
+print(res)
+runners.append(naked_runner)
 
 stock_params = [S0, T, drift, volatility] #strike, expiry, rate, volatility
 delta_runner = SimpleRunner("delta", pref_gpu=True)
 res = delta_runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, extra_params=stock_params)
 print(res)
+runners.append(delta_runner)
 
-runner = ExperimentRunner("recurrent", pref_gpu=True)
-h_dim = 15
-res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, h_dim)
-print(res)
+# runner = ExperimentRunner("recurrent", pref_gpu=True)
+# h_dim = 15
+# res = runner.run(contingent_claim, hedging_instruments, criterion, T, step_interest_rate, epochs, paths, verbose, cost_function, h_dim)
+# print(res)
+# filename = f"output/{runner.agent_type}_hd_{h_dim}_e_{epochs}_p_{paths}_s_{seed}_pc_{prop_cost: .1f}"
+# runner.plot_runner(animate=False, save=False, file_prefix=filename, n=2)
+# runners.append(runner)
 
-filename = f"output/{runner.agent_type}_hd_{h_dim}_e_{epochs}_p_{paths}_s_{seed}_pc_{prop_cost: .1f}"
-runner.plot_runner(animate=False, save=False, file_prefix=filename, n=2)
+plot_dists(runners, save=True, file_prefix="output/naked_delta")
+plt.show()

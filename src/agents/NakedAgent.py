@@ -21,15 +21,6 @@ class NakedAgent(Agent):
                  ):
         super().__init__(criterion, cost_function, hedging_instruments, interest_rate, lr, pref_gpu)
 
-
-    def feature_transform(self, state: tuple) -> torch.Tensor:
-        """
-        :param state: tuple
-        :return: torch.Tensor
-        """
-        # only know the current price
-        return torch.zeros(1, len(self.hedging_instruments), device=self.device)
-
     def forward(self, state: tuple) -> torch.Tensor:
-        action = self.feature_transform(state) # D x input_dim
-        return action
+        # do nothing
+        return torch.zeros(self.N, device=self.device)

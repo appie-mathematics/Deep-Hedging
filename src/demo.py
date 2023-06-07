@@ -22,15 +22,15 @@ total_rate = 0.0
 step_interest_rate = (total_rate + 1) ** (1 / T) - 1
 
 # Define an underlying stock
-drift = step_interest_rate
-volatility = 0.2
 S0 = 1
+volatility = 0.2
+drift = step_interest_rate
 stock = GeometricBrownianStock(S0, drift, volatility)
 
 # Define the claim, hedging instruments, criterion, and costs for the experiment
 contingent_claim: Claim = BSCall(stock, S0, T, drift, volatility)
 hedging_instruments: List[Instrument] = [stock]
-criterion: torch.nn.Module = RiskMeasures.WorstCase()
+criterion = RiskMeasures.WorstCase()
 cost_function: CostFunction = PorportionalCost(0.0)
 
 # Define the agent

@@ -15,12 +15,14 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from agents.DeltaAgent import DeltaAgent
+from agents.NakedAgent import NakedAgent
 
 
 agents = {
     "simple": SimpleAgent,
     "recurrent": RecurrentAgent,
-    "delta": DeltaAgent
+    "delta": DeltaAgent,
+    "naked": NakedAgent
 }
 
 class ExperimentRunner:
